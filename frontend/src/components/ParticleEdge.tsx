@@ -67,13 +67,12 @@ const ParticleEdge: React.FC<ParticleEdgeProps> = ({
     const particleElements = [];
     
     // Create path based on direction
-    // If direction is "source", particles flow from source to target (normal direction)
-    // If direction is "target", particles flow from target to source (reversed direction)
-    const isSource = particles.direction === 'source';
-    const pathData = isSource ? createCurvedPath() : createReversedPath();
+    // If direction is "source", particles flow out of the node (normal direction)
+    // If direction is "target", particles flow into the node (normal direction)
+    const pathData = createCurvedPath(); // Always use normal direction for now
     
     // Debug logging
-    console.log(`Particle direction: ${particles.direction}, isSource: ${isSource}, pathData: ${pathData}`);
+    console.log(`Particle direction: ${particles.direction}, pathData: ${pathData}`);
 
     for (let i = 0; i < particleCount; i++) {
       const delay = (i / particleCount) * 1.5; // Stagger particles

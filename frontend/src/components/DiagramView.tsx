@@ -75,7 +75,7 @@ const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad }) => {
             // Find the target node to get its properties
             const targetNode = data.nodes.find(n => n.name === sourceId);
             if (targetNode) {
-              // Use the CURRENT node's particle configuration (the actual source of the connection)
+              // Use the CURRENT node's particle configuration (the node that defines the connection)
               const particles = node.particles;
               
               // Debug logging
@@ -87,10 +87,16 @@ const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad }) => {
                 edgeType = 'particle';
               }
               
+              // Create edge based on direction
+              // If direction is "source", edge goes from current node to target
+              // If direction is "target", edge goes from target to current node
+              const edgeSource = node.particles?.direction === 'source' ? node.name : sourceId;
+              const edgeTarget = node.particles?.direction === 'source' ? sourceId : node.name;
+              
               flowEdges.push({
-                id: `${sourceId}-${node.name}-${index}`,
-                source: sourceId,
-                target: node.name,
+                id: `${edgeSource}-${edgeTarget}-${index}`,
+                source: edgeSource,
+                target: edgeTarget,
                 sourceHandle: `output-${outputHandle}`,
                 targetHandle: `input-${inputHandle}`,
                 type: edgeType,

@@ -154,7 +154,7 @@
 }
 
 .diagram-node-description {
-  @apply text-gray-400 text-sm mb-3;
+  @apply text-gray-400 text-xs mb-3 w-[180px];
 }
 
 /* Metrics grid with table styling */

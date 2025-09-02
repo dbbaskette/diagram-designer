@@ -13,7 +13,7 @@
     {
       "name": "WebServer-01",
       "displayName": "Web Server",
-      "description": "Handles incoming HTTP requests from clients and serves static content.",
+      "description": "Handles HTTP requests from clients and serves static content.",
       "icon": "fas fa-server",
       "position": { "x": 100, "y": 200 },
       "circleColor": "#3498db",
@@ -49,7 +49,7 @@
         "density": 150,
         "color": "#3498db",
         "count": 5,
-        "direction": "source"
+        "direction": "target"
       },
       "handles": {
         "input": 1,
@@ -99,7 +99,7 @@
         "enabled": true,
         "speed": 1.5,
         "density": 100,
-        "color": "#76D72A",
+        "color": "#F8F8F8",
         "count": 4,
         "direction": "target"
       },
@@ -151,7 +151,7 @@
         "enabled": true,
         "speed": 5,
         "density": 200,
-        "color": "#e74c3c",
+        "color": "#F8F8F8",
         "count": 5,
         "direction": "target"
       },
@@ -203,7 +203,7 @@
         "enabled": true,
         "speed": 1,
         "density": 100,
-        "color": "#76D72A",
+        "color": "#F8F8F8",
         "count": 2,
         "direction": "target"
       },
