@@ -1,0 +1,158 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+@import '@fortawesome/fontawesome-free/css/all.css';
+
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-gray-800/50 border border-gray-700 rounded-lg shadow-lg p-6;
+  }
+  
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .status-online {
+    @apply bg-green-500/20 text-green-400;
+  }
+  
+  .status-offline {
+    @apply bg-red-500/20 text-red-400;
+  }
+  
+  .status-warning {
+    @apply bg-yellow-500/20 text-yellow-400;
+  }
+  
+  .form-input {
+    @apply bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 rounded-lg;
+  }
+  
+  .form-select {
+    @apply bg-gray-800 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500 rounded-lg;
+  }
+  
+  .nav-icon {
+    @apply w-12 h-12 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-all duration-200;
+  }
+  
+  .nav-icon.active {
+    @apply text-white bg-gray-700;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* React Flow specific styles */
+.react-flow__node {
+  font-family: inherit;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2px;
+}
+
+/* Custom node styles */
+.diagram-node {
+  @apply bg-gray-800/90 border-2 rounded-full w-[80px] h-[80px] flex flex-col items-center justify-center relative;
+  transition: all 0.3s ease;
+}
+
+.diagram-node.healthy {
+  @apply border-green-500;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3), 0 0 40px rgba(34, 197, 94, 0.15), inset 0 0 20px rgba(34, 197, 94, 0.1);
+}
+
+.diagram-node.warning {
+  @apply border-yellow-500;
+  box-shadow: 0 0 20px rgba(234, 179, 8, 0.3), 0 0 40px rgba(234, 179, 8, 0.15), inset 0 0 20px rgba(234, 179, 8, 0.1);
+}
+
+.diagram-node.error {
+  @apply border-red-500;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3), 0 0 40px rgba(239, 68, 68, 0.15), inset 0 0 20px rgba(239, 68, 68, 0.1);
+}
+
+.diagram-node-icon {
+  @apply text-2xl text-white;
+}
+
+/* Node info section below circle */
+.diagram-node-info {
+  @apply absolute top-[90px] left-1/2 transform -translate-x-1/2 text-center min-w-[150px];
+}
+
+.diagram-node-title {
+  @apply text-white text-base font-semibold mb-1;
+}
+
+.diagram-node-description {
+  @apply text-gray-400 text-sm mb-3;
+}
+
+/* Metrics grid with table styling */
+.diagram-node-metrics-grid {
+  @apply absolute top-[160px] left-1/2 transform -translate-x-1/2 bg-gray-800/90 border border-green-500 rounded w-[180px] overflow-hidden;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.2), inset 0 0 5px rgba(34, 197, 94, 0.05);
+}
+
+.diagram-node-metric-row {
+  @apply flex border-b border-green-500 last:border-b-0;
+}
+
+.diagram-node-metric-label {
+  @apply text-gray-300 text-xs py-1.5 px-2 border-r border-green-500 flex-1 bg-gray-800/50;
+  font-size: 10px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diagram-node-metric-value {
+  @apply text-green-400 font-mono text-xs py-1.5 px-2 flex-shrink-0 font-semibold bg-gray-800/30;
+  font-size: 10px;
+  line-height: 1.2;
+  min-width: 50px;
+  text-align: right;
+}
