@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DiagramView from './components/DiagramView';
 import ComingSoon from './components/ComingSoon';
+import type { DiagramConfig } from './types/diagram';
 
 const queryClient = new QueryClient();
 
-function Header({ connected }: { connected: boolean }) {
+// Create context for sharing configuration
+const ConfigContext = createContext<DiagramConfig | null>(null);
+
+export const useConfig = () => {
+  const context = useContext(ConfigContext);
+  return context;
+};
+
+function Header({ connected, title }: { connected: boolean; title?: string }) {
   return (
     <header className="bg-gray-800/50 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
@@ -14,7 +23,7 @@ function Header({ connected }: { connected: boolean }) {
           <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
           <path d="m9 12 2 2 4-4"/>
         </svg>
-        <h1 className="text-xl font-semibold text-white">Diagram Designer</h1>
+        <h1 className="text-xl font-semibold text-white">{title || 'Diagram Designer'}</h1>
       </div>
       <div className="flex items-center gap-4">
         <button className="text-gray-400 hover:text-white">
@@ -119,24 +128,27 @@ function Sidebar() {
 
 function App() {
   const [connected, setConnected] = useState(true);
+  const [config, setConfig] = useState<DiagramConfig | null>(null);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <div className="min-h-screen bg-gray-900 flex flex-col">
-          <Header connected={connected} />
-          <div className="flex flex-1">
-            <Sidebar />
-            <main className="flex-1 overflow-hidden">
-              <Routes>
-                <Route path="/" element={<DiagramView />} />
-                <Route path="/construction1" element={<ComingSoon title="Construction Feature 1" />} />
-                <Route path="/construction2" element={<ComingSoon title="Construction Feature 2" />} />
-              </Routes>
-            </main>
+      <ConfigContext.Provider value={config}>
+        <Router>
+          <div className="min-h-screen bg-gray-900 flex flex-col">
+            <Header connected={connected} title={config?.config.title} />
+            <div className="flex flex-1">
+              <Sidebar />
+              <main className="flex-1 overflow-hidden">
+                <Routes>
+                  <Route path="/" element={<DiagramView onConfigLoad={setConfig} />} />
+                  <Route path="/construction1" element={<ComingSoon title="Construction Feature 1" />} />
+                  <Route path="/construction2" element={<ComingSoon title="Construction Feature 2" />} />
+                </Routes>
+              </main>
+            </div>
           </div>
-        </div>
-      </Router>
+        </Router>
+      </ConfigContext.Provider>
     </QueryClientProvider>
   );
 }

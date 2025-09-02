@@ -13,13 +13,24 @@ import type { Connection, Edge } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 import CustomNode from './CustomNode';
+import CustomCurvedEdge from './CustomEdge';
+import ParticleEdge from './ParticleEdge';
 import type { DiagramConfig, DiagramNode } from '../types/diagram';
 
 const nodeTypes = {
   custom: CustomNode,
 };
 
-const DiagramView: React.FC = () => {
+const edgeTypes = {
+  curved: CustomCurvedEdge,
+  particle: ParticleEdge,
+};
+
+interface DiagramViewProps {
+  onConfigLoad?: (config: DiagramConfig) => void;
+}
+
+const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [config, setConfig] = useState<DiagramConfig | null>(null);
@@ -32,6 +43,11 @@ const DiagramView: React.FC = () => {
         const response = await fetch('/diagram-config.json');
         const data: DiagramConfig = await response.json();
         setConfig(data);
+        
+        // Notify parent component that config is loaded
+        if (onConfigLoad) {
+          onConfigLoad(data);
+        }
         
         // Convert config nodes to React Flow nodes
         const flowNodes = data.nodes.map((node: DiagramNode, index: number) => ({
@@ -56,21 +72,40 @@ const DiagramView: React.FC = () => {
             const outputHandle = typeof connection === 'object' ? connection.outputHandle || 0 : index;
             const inputHandle = typeof connection === 'object' ? connection.inputHandle || 0 : 0;
             
-            // Find the source node to get its properties
-            const sourceNode = data.nodes.find(n => n.name === sourceId);
-            if (sourceNode) {
+            // Find the target node to get its properties
+            const targetNode = data.nodes.find(n => n.name === sourceId);
+            if (targetNode) {
+              // Use the CURRENT node's particle configuration (the actual source of the connection)
+              const particles = node.particles;
+              
+              // Debug logging
+              console.log(`Edge: ${node.name} -> ${sourceId}, Current node particles:`, particles);
+              
+              // Determine edge type based on particles and edgeType
+              let edgeType = node.edgeType || 'smoothstep';
+              if (particles?.enabled) {
+                edgeType = 'particle';
+              }
+              
               flowEdges.push({
                 id: `${sourceId}-${node.name}-${index}`,
                 source: sourceId,
                 target: node.name,
                 sourceHandle: `output-${outputHandle}`,
                 targetHandle: `input-${inputHandle}`,
-                type: 'smoothstep',
-                animated: sourceNode.particles?.enabled || false,
+                type: edgeType,
+                animated: particles?.enabled || false,
                 style: {
-                  stroke: sourceNode.lineColor || '#3498db',
+                  stroke: node.lineColor || '#3498db',
                   strokeWidth: 2,
-                  strokeDasharray: sourceNode.lineType === 'dashed' ? '5,5' : undefined,
+                  strokeDasharray: node.lineType === 'dashed' ? '5,5' : undefined,
+                },
+                pathOptions: {
+                  borderRadius: 20,
+                },
+                data: {
+                  particles: particles,
+                  originalEdgeType: node.edgeType || 'smoothstep',
                 },
               });
             }
@@ -128,6 +163,7 @@ const DiagramView: React.FC = () => {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           fitView
           attributionPosition="bottom-left"
         >

@@ -63,14 +63,6 @@
       "icon": "/assets/icons/RabbitMQ.svg", 
       "position": { "x": 400, "y": 200 },
       "circleColor": "#76D72A",
-      "status": {
-        "url": "https://rabbitmq.example.com/api/overview",
-        "key": "rabbitmq-admin-token-456",
-        "valueField": "node",
-        "upValue": "running",
-        "downValue": "stopped",
-        "updateInterval": 15000
-      },
       "dataGrid": [
         {
           "label": "Transactions",
@@ -85,23 +77,12 @@
           "valueField": "averageLatencyMs"
         }
       ],
-      "connectTo": [
-        {
-          "target": "WebServer-01",
-          "outputHandle": 0,
-          "inputHandle": 0
-        }
-      ],
+      "connectTo": ["WebServer-01"],
       "lineType": "solid",
-      "lineColor": "#76D72A",
-      "edgeType": "curved",
+      "lineColor": "#2ecc71",
+      "edgeType": "smoothstep",
       "particles": {
-        "enabled": true,
-        "speed": 1.5,
-        "density": 100,
-        "color": "#76D72A",
-        "count": 4,
-        "direction": "target"
+        "enabled": false
       },
       "handles": {
         "input": 1,
@@ -115,14 +96,6 @@
       "icon": "/assets/icons/hadoop.svg",
       "position": { "x": 700, "y": 300 },
       "circleColor": "#e74c3c",
-      "status": {
-        "url": "https://datalake.example.com/api/health",
-        "key": "datalake-access-key-789",
-        "valueField": "cluster_status",
-        "upValue": "active",
-        "downValue": "inactive",
-        "updateInterval": 20000
-      },
       "dataGrid": [
         {
           "label": "Active Connections",
@@ -137,22 +110,16 @@
           "valueField": "diskSizeGb"
         }
       ],
-      "connectTo": [
-        {
-          "target": "Data Exchange",
-          "outputHandle": 1,
-          "inputHandle": 0
-        }
-      ],
+      "connectTo": [{"target": "Data Exchange", "outputHandle": 1}],
       "lineType": "solid",
       "lineColor": "#e74c3c",
       "edgeType": "curved",
       "particles": {
         "enabled": true,
-        "speed": 5,
-        "density": 200,
+        "speed": 1,
+        "density": 100,
         "color": "#e74c3c",
-        "count": 5,
+        "count": 3,
         "direction": "target"
       },
       "handles": {
@@ -160,21 +127,13 @@
         "output": 1
       }
     },
-       {
+    {
       "name": "TestItem",
       "displayName": "Test Item",
       "description": "Testing components.",
       "icon": "/assets/icons/tanzu.png", 
       "position": { "x": 700, "y": 100 },
       "circleColor": "#76D72A",
-      "status": {
-        "url": "https://test.example.com/api/status",
-        "key": "test-service-key-101",
-        "valueField": "service_state",
-        "upValue": "online",
-        "downValue": "offline",
-        "updateInterval": 5000
-      },
       "dataGrid": [
         {
           "label": "Transactions",
@@ -189,23 +148,17 @@
           "valueField": "averageLatencyMs"
         }
       ],
-      "connectTo": [
-        {
-          "target": "Data Exchange",
-          "outputHandle": 0,
-          "inputHandle": 0
-        }
-      ],
+      "connectTo": [{"target": "Data Exchange", "outputHandle": 0}],
       "lineType": "solid",
-      "lineColor": "#76D72A",
-      "edgeType": "curved",
+      "lineColor": "#2ecc71",
+      "edgeType": "default",
       "particles": {
         "enabled": true,
         "speed": 1,
         "density": 100,
-        "color": "#76D72A",
-        "count": 2,
-        "direction": "target"
+        "color": "#e74c3c",
+        "count": 3,
+        "direction": "source"
       },
       "handles": {
         "input": 1,

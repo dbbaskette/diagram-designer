@@ -92,9 +92,36 @@
   stroke-width: 2px;
 }
 
+/* React Flow handle styles */
+.react-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  border: 2px solid #ffffff !important;
+  background: #6b7280 !important;
+  z-index: 1000 !important;
+  position: absolute !important;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3) !important;
+}
+
+.react-flow__handle-top {
+  top: -6px !important;
+}
+
+.react-flow__handle-bottom {
+  bottom: -6px !important;
+}
+
+.react-flow__handle-left {
+  left: -6px !important;
+}
+
+.react-flow__handle-right {
+  right: -6px !important;
+}
+
 /* Custom node styles */
 .diagram-node {
-  @apply bg-gray-800/90 border-2 rounded-full w-[80px] h-[80px] flex flex-col items-center justify-center relative;
+  @apply bg-gray-800/90 border-4 rounded-full w-[80px] h-[80px] flex flex-col items-center justify-center relative;
   transition: all 0.3s ease;
 }
 

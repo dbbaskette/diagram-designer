@@ -3,6 +3,11 @@ export interface DiagramConfig {
     layout: 'horizontal' | 'vertical';
     updateInterval: number;
     title: string;
+    nodeGlow?: {
+      enabled: boolean;
+      intensity: number;
+      spread: number;
+    };
   };
   nodes: DiagramNode[];
 }
@@ -19,15 +24,27 @@ export interface DiagramNode {
   description: string;
   icon: string;
   position?: { x: number; y: number };
+  circleColor?: string; // Color of the node circle border and glow
+  status?: {
+    url: string;
+    key: string;
+    valueField: string;
+    upValue: string;
+    downValue: string;
+    updateInterval: number;
+  };
   dataGrid: DataGridItem[];
   connectTo: (string | Connection)[]; // Support both simple strings and detailed connections
   lineType: 'solid' | 'dashed';
   lineColor: string;
+  edgeType?: 'default' | 'smoothstep' | 'straight' | 'step' | 'curved';
   particles: {
     enabled: boolean;
     speed?: number;
     density?: number;
     color?: string;
+    count?: number;  // Number of particles per line
+    direction?: 'source' | 'target'; // 'source' = particles flow out, 'target' = particles flow in
   };
   handles?: {
     input?: number;  // Number of input handles on the left
