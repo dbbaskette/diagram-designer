@@ -22,16 +22,29 @@ function DiagramSelector({ selectedDiagram, onDiagramChange }: { selectedDiagram
   useEffect(() => {
     const discoverDiagramFiles = async () => {
       try {
-        // Only check for files that actually exist in your public directory
-        const knownFiles = [
+        // First try to get the list from our API endpoint
+        try {
+          const response = await fetch('/api/list-diagrams.json');
+          if (response.ok) {
+            const fileList = await response.json();
+            setAvailableDiagrams(fileList);
+            return;
+          }
+        } catch (error) {
+          console.log('API endpoint not available, falling back to individual checks');
+        }
+        
+        // Fallback: Check for common diagram files
+        const potentialFiles = [
           'diagram-config.json',
-          'Telemetry-Processing.json'
+          'Telemetry-Processing.json',
+          'IMC-chatbot.json'
         ];
         
         const existingFiles: string[] = [];
         
-        // Check each known file
-        for (const filename of knownFiles) {
+        // Check each potential file
+        for (const filename of potentialFiles) {
           try {
             const response = await fetch(`/${filename}`, { method: 'HEAD' });
             if (response.ok) {
@@ -210,13 +223,32 @@ function App() {
 
   // Validate that the selected diagram still exists when available diagrams change
   useEffect(() => {
-    const availableDiagrams = ['diagram-config.json', 'Telemetry-Processing.json'];
-    if (availableDiagrams.length > 0 && !availableDiagrams.includes(selectedDiagram)) {
-      console.log(`Selected diagram "${selectedDiagram}" no longer exists, switching to first available`);
-      const newSelection = availableDiagrams[0];
-      setSelectedDiagram(newSelection);
-      localStorage.setItem('selectedDiagram', newSelection);
-    }
+    const validateSelectedDiagram = async () => {
+      try {
+        // Get current available diagrams
+        let availableDiagrams: string[] = [];
+        try {
+          const response = await fetch('/api/list-diagrams.json');
+          if (response.ok) {
+            availableDiagrams = await response.json();
+          }
+        } catch (error) {
+          // Fallback to known files if API not available
+          availableDiagrams = ['diagram-config.json', 'Telemetry-Processing.json', 'IMC-chatbot.json'];
+        }
+        
+        if (availableDiagrams.length > 0 && !availableDiagrams.includes(selectedDiagram)) {
+          console.log(`Selected diagram "${selectedDiagram}" no longer exists, switching to first available`);
+          const newSelection = availableDiagrams[0];
+          setSelectedDiagram(newSelection);
+          localStorage.setItem('selectedDiagram', newSelection);
+        }
+      } catch (error) {
+        console.error('Error validating selected diagram:', error);
+      }
+    };
+    
+    validateSelectedDiagram();
   }, [selectedDiagram]);
 
   // Toggle coordinates display and persist to localStorage

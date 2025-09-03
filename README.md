@@ -347,6 +347,25 @@ cd diagram-designer
 - 🗂️ **Automatic Discovery**: Scans `public/` directory for JSON files
 - 🔄 **Dynamic Switching**: Change diagrams without refresh
 - 💾 **Persistent Selection**: Remembers last selected diagram
+- 🚀 **Auto-Detection**: New JSON files automatically appear in selector
+
+#### 🔄 **Auto-Detection Workflow**
+
+1. **📁 Add JSON File**: Place your diagram JSON file in `frontend/public/`
+2. **🔄 Update List**: Run `./update-diagram-list.sh` to scan and update the file list
+3. **✨ Auto-Appear**: Your diagram automatically appears in the selector dropdown
+4. **🎯 Select & Use**: Choose your diagram from the dropdown and start using it
+
+**Example:**
+```bash
+# Add your new diagram file
+cp my-diagram.json frontend/public/
+
+# Update the diagram list
+./update-diagram-list.sh
+
+# Your diagram now appears in the UI! 🎉
+```
 
 ### 🖱️ **Interactive Positioning**
 
@@ -374,6 +393,9 @@ cd diagram-designer
 
 # 🏭 Production build served locally
 ./deploy-local-prod.sh
+
+# 🔄 Update diagram list (when adding new JSON files)
+./update-diagram-list.sh
 ```
 
 ### ☁️ **Cloud Foundry**
