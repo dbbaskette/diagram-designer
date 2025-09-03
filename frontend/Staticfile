@@ -1,0 +1,5 @@
+root: dist
+location_include: errors/*.html
+pushstate: enabled
+http_strict_transport_security: true
+force_https: true

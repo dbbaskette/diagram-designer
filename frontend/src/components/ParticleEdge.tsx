@@ -6,8 +6,6 @@ interface ParticleEdgeProps {
   sourceY: number;
   targetX: number;
   targetY: number;
-  sourcePosition: any;
-  targetPosition: any;
   style?: any;
   data?: any;
   markerEnd?: string;
@@ -19,8 +17,6 @@ const ParticleEdge: React.FC<ParticleEdgeProps> = ({
   sourceY,
   targetX,
   targetY,
-  sourcePosition,
-  targetPosition,
   style = {},
   data,
   markerEnd,
@@ -29,7 +25,6 @@ const ParticleEdge: React.FC<ParticleEdgeProps> = ({
   
   // Get particle configuration from data
   const particles = data?.particles || { enabled: false };
-  const originalEdgeType = data?.originalEdgeType || 'smoothstep';
 
   // Create a smooth curved path
   const createCurvedPath = () => {
@@ -43,20 +38,6 @@ const ParticleEdge: React.FC<ParticleEdgeProps> = ({
     const controlPoint2Y = targetY;
     
     return `M ${sourceX} ${sourceY} Q ${controlPoint1X} ${controlPoint1Y} ${midX} ${midY} Q ${controlPoint2X} ${controlPoint2Y} ${targetX} ${targetY}`;
-  };
-
-  const createReversedPath = () => {
-    // Create a curved path from target to source (reversed direction)
-    const midX = (sourceX + targetX) / 2;
-    const midY = (sourceY + targetY) / 2;
-    
-    // Calculate control points for a smooth curve (reversed)
-    const controlPoint1X = targetX - (targetX - midX) * 0.5;
-    const controlPoint1Y = targetY;
-    const controlPoint2X = sourceX + (midX - sourceX) * 0.5;
-    const controlPoint2Y = sourceY;
-    
-    return `M ${targetX} ${targetY} Q ${controlPoint1X} ${controlPoint1Y} ${midX} ${midY} Q ${controlPoint2X} ${controlPoint2Y} ${sourceX} ${sourceY}`;
   };
 
   // Create particles along the path

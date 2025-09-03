@@ -75,4 +75,5 @@ export interface NodeData extends DiagramNode {
       spread: number;
     };
   };
+  showCoordinates?: boolean;
 }

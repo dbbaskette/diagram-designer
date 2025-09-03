@@ -29,9 +29,10 @@ const edgeTypes = {
 interface DiagramViewProps {
   onConfigLoad?: (config: DiagramConfig) => void;
   selectedDiagram?: string;
+  showCoordinates?: boolean;
 }
 
-const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDiagram = 'diagram-config.json' }) => {
+const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDiagram = 'diagram-config.json', showCoordinates = false }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [config, setConfig] = useState<DiagramConfig | null>(null);
@@ -71,6 +72,7 @@ const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDiagram
             data: {
               ...node,
               config: data.config,
+              showCoordinates: showCoordinates,
             },
           };
         });

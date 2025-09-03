@@ -1,5 +1,4 @@
 import React from 'react';
-import { getSmoothStepPath } from 'reactflow';
 
 interface CustomEdgeProps {
   id: string;
@@ -7,10 +6,7 @@ interface CustomEdgeProps {
   sourceY: number;
   targetX: number;
   targetY: number;
-  sourcePosition: any;
-  targetPosition: any;
   style?: any;
-  data?: any;
   markerEnd?: string;
 }
 
@@ -20,10 +16,7 @@ const CustomCurvedEdge: React.FC<CustomEdgeProps> = ({
   sourceY,
   targetX,
   targetY,
-  sourcePosition,
-  targetPosition,
   style = {},
-  data,
   markerEnd,
 }) => {
   // Create a more curved path using quadratic curves

@@ -15,7 +15,10 @@
       "displayName": "Telematics Generator",
       "description": "Creates Simulated Telematics Data.",
       "icon": "🚗",
-      "position": { "x": 100, "y": 200 },
+      "position": {
+        "x": 150,
+        "y": 100
+      },
       "circleColor": "#3498db",
       "url": "https://imc-telematics-gen.apps.tas-ndc.kuhn-labs.com/",
       "status": {
@@ -61,8 +64,11 @@
       "name": "teleExchange",
       "displayName": "Telematics Exchange (Queue)",
       "description": "Captures Streaming Data.",
-      "icon": "/assets/icons/RabbitMQ.svg", 
-      "position": { "x": 400, "y": 200 },
+      "icon": "/assets/icons/RabbitMQ.svg",
+      "position": {
+        "x": 400,
+        "y": 100
+      },
       "circleColor": "#76D72A",
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
@@ -115,7 +121,10 @@
       "displayName": "HDFS Sink",
       "description": "RabbitMQ to HDFS.",
       "icon": "🗄️",
-      "position": { "x": 700, "y": 300 },
+      "position": {
+        "x": 670.4180825242719,
+        "y": 9.450242718446574
+      },
       "circleColor": "#e74c3c",
       "status": {
         "url": "https://datalake.example.com/api/health",
@@ -167,7 +176,10 @@
       "displayName": "Events Processor",
       "description": "Scan for vehicle events.",
       "icon": "fa-solid fa-gears",
-      "position": { "x": 700, "y": 300 },
+      "position": {
+        "x": 660.6529126213593,
+        "y": 277.20509708737865
+      },
       "circleColor": "#e74c3c",
       "status": {
         "url": "https://datalake.example.com/api/health",
@@ -219,7 +231,10 @@
       "displayName": "Tanzu Data Lake (HDFS)",
       "description": "Long term storage for telemetry data.",
       "icon": "/assets/icons/hadoop.svg",
-      "position": { "x": 700, "y": 300 },
+      "position": {
+        "x": 924.8567961165048,
+        "y": 9.450242718446574
+      },
       "circleColor": "#e74c3c",
       "status": {
         "url": "https://datalake.example.com/api/health",
@@ -270,8 +285,11 @@
       "name": "vehicleExchange",
       "displayName": "Vehicle Events Exchange (Queue)",
       "description": "Adverse Events Data.",
-      "icon": "/assets/icons/RabbitMQ.svg", 
-      "position": { "x": 400, "y": 200 },
+      "icon": "/assets/icons/RabbitMQ.svg",
+      "position": {
+        "x": 921.3058252427185,
+        "y": 275.4296116504854
+      },
       "circleColor": "#76D72A",
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
@@ -323,8 +341,11 @@
       "name": "JDBCsink",
       "displayName": "JDBC Sink",
       "description": "Sink Events to Database",
-      "icon": "fa-solid fa-database", 
-      "position": { "x": 400, "y": 200 },
+      "icon": "fa-solid fa-database",
+      "position": {
+        "x": 1150,
+        "y": 189.63349514563106
+      },
       "circleColor": "#76D72A",
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
@@ -376,8 +397,11 @@
       "name": "gpdb",
       "displayName": "Greenplum Warehouse",
       "description": "Database Storage",
-      "icon": "/assets/icons/tanzu.png", 
-      "position": { "x": 400, "y": 200 },
+      "icon": "/assets/icons/tanzu.png",
+      "position": {
+        "x": 1398.2245145631068,
+        "y": 194.07220873786406
+      },
       "circleColor": "#76D72A",
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
@@ -429,8 +453,11 @@
       "name": "logsink",
       "displayName": "Log Sink",
       "description": "Represents External Processing (SMS)",
-      "icon": "📝", 
-      "position": { "x": 400, "y": 200 },
+      "icon": "📝",
+      "position": {
+        "x": 1142.898058252427,
+        "y": 450.01729091874336
+      },
       "circleColor": "#76D72A",
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {

@@ -3,7 +3,7 @@ import { Handle, Position } from 'reactflow';
 import type { NodeProps } from 'reactflow';
 import type { NodeData } from '../types/diagram';
 
-const CustomNode: React.FC<NodeProps<NodeData>> = ({ data }) => {
+const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
   // Get handle configuration from node data
   const inputHandles = data.handles?.input || 1;
   const outputHandles = data.handles?.output || 1;
@@ -238,6 +238,13 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data }) => {
 
       {/* Output Handles - Configurable number */}
       {outputHandleElements}
+
+      {/* Coordinates Display */}
+      {data.showCoordinates && (
+        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded pointer-events-none z-10">
+          {Math.round(xPos || 0)}, {Math.round(yPos || 0)}
+        </div>
+      )}
     </>
   );
 };

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DiagramView from './components/DiagramView';
 import ComingSoon from './components/ComingSoon';
+import Settings from './components/Settings';
 import type { DiagramConfig } from './types/diagram';
 
 const queryClient = new QueryClient();
@@ -195,6 +196,12 @@ function App() {
   const [connected] = useState(true);
   const [config, setConfig] = useState<DiagramConfig | null>(null);
   
+  // Coordinates display toggle
+  const [showCoordinates, setShowCoordinates] = useState(() => {
+    const saved = localStorage.getItem('showCoordinates');
+    return saved === 'true';
+  });
+
   // Load selected diagram from localStorage or default to first available
   const [selectedDiagram, setSelectedDiagram] = useState(() => {
     const saved = localStorage.getItem('selectedDiagram');
@@ -211,6 +218,60 @@ function App() {
       localStorage.setItem('selectedDiagram', newSelection);
     }
   }, [selectedDiagram]);
+
+  // Toggle coordinates display and persist to localStorage
+  const toggleCoordinates = (show: boolean) => {
+    setShowCoordinates(show);
+    localStorage.setItem('showCoordinates', show.toString());
+  };
+
+  // Function to save current layout to JSON file
+  const saveCurrentLayout = async () => {
+    try {
+      // Get current positions from localStorage (these are the live positions)
+      const savedPositionsKey = `diagram-positions-${selectedDiagram}`;
+      const currentPositions = JSON.parse(localStorage.getItem(savedPositionsKey) || '{}');
+      
+      if (Object.keys(currentPositions).length === 0) {
+        throw new Error('No position changes found. Try moving some components first.');
+      }
+
+      // Get the current configuration
+      if (!config) {
+        throw new Error('No configuration loaded');
+      }
+
+      // Create a new config with updated positions
+      const updatedConfig = {
+        ...config,
+        nodes: config.nodes.map(node => ({
+          ...node,
+          position: currentPositions[node.name] || node.position
+        }))
+      };
+
+      // Convert to JSON string with proper formatting
+      const jsonString = JSON.stringify(updatedConfig, null, 2);
+
+      // Create and download the file
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = selectedDiagram;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      console.log('Layout saved with positions:', currentPositions);
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to save layout:', error);
+      throw error;
+    }
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -230,9 +291,10 @@ function App() {
               <Sidebar />
               <main className="flex-1 overflow-hidden">
                 <Routes>
-                  <Route path="/" element={<DiagramView onConfigLoad={setConfig} selectedDiagram={selectedDiagram} />} />
+                  <Route path="/" element={<DiagramView onConfigLoad={setConfig} selectedDiagram={selectedDiagram} showCoordinates={showCoordinates} />} />
                   <Route path="/construction1" element={<ComingSoon title="Construction Feature 1" />} />
                   <Route path="/construction2" element={<ComingSoon title="Construction Feature 2" />} />
+                  <Route path="/settings" element={<Settings selectedDiagram={selectedDiagram} onSaveLayout={saveCurrentLayout} showCoordinates={showCoordinates} onToggleCoordinates={toggleCoordinates} />} />
                 </Routes>
               </main>
             </div>
