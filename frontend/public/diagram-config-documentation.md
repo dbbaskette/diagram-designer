@@ -31,6 +31,7 @@ Each node in the `nodes` array supports the following properties:
 - **`icon`** (string): Icon for the node
   - FontAwesome icons: `"fas fa-server"`
   - Local images: `"/assets/icons/icon.svg"` or `"/assets/icons/icon.png"`
+  - Emoji icons: `"🚗"`, `"🗄️"`, `"⚙️"`, `"🗃️"`, `"📝"`
 - **`dataGrid`** (array): Array of metrics to display in the node's grid
 
 ### Optional Properties
@@ -42,6 +43,15 @@ Each node in the `nodes` array supports the following properties:
     "y": 200   // Y coordinate
   }
   ```
+
+- **`url`** (string, optional): URL to open when the component is clicked
+  ```json
+  {
+    "url": "https://dashboard.example.com"
+  }
+  ```
+  - Opens in a new browser window/tab
+  - Makes the component clickable with hover effects
 
 - **`connectTo`** (array): Defines connections TO this node (right-to-left definition)
   - Simple string: `"NodeName"`

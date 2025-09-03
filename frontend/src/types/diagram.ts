@@ -25,6 +25,7 @@ export interface DiagramNode {
   icon: string;
   position?: { x: number; y: number };
   circleColor?: string; // Color of the node circle border and glow
+  url?: string; // URL to open when component is clicked
   status?: {
     url: string;
     key: string;
@@ -37,7 +38,7 @@ export interface DiagramNode {
   connectTo: (string | Connection)[]; // Support both simple strings and detailed connections
   lineType: 'solid' | 'dashed';
   lineColor: string;
-  edgeType?: 'default' | 'smoothstep' | 'straight' | 'step' | 'curved';
+  edgeType?: 'default' | 'smoothstep' | 'straight' | 'step' | 'curved' | 'particle';
   particles: {
     enabled: boolean;
     speed?: number;
@@ -68,5 +69,10 @@ export interface NodeData extends DiagramNode {
     layout: 'horizontal' | 'vertical';
     updateInterval: number;
     title: string;
+    nodeGlow?: {
+      enabled: boolean;
+      intensity: number;
+      spread: number;
+    };
   };
 }

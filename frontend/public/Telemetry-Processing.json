@@ -1,0 +1,482 @@
+{
+  "config": {
+    "layout": "horizontal",
+    "updateInterval": 30000,
+    "title": "Telemetry Processing",
+    "nodeGlow": {
+      "enabled": true,
+      "intensity": 8,
+      "spread": 12
+    }
+  },
+  "nodes": [
+    {
+      "name": "telegen",
+      "displayName": "Telematics Generator",
+      "description": "Creates Simulated Telematics Data.",
+      "icon": "🚗",
+      "position": { "x": 100, "y": 200 },
+      "circleColor": "#3498db",
+      "url": "https://imc-telematics-gen.apps.tas-ndc.kuhn-labs.com/",
+      "status": {
+        "url": "https://imc-telematics-gen.apps.tas-ndc.kuhn-labs.com/actuator/health",
+        "key": "health-check-token-123",
+        "valueField": "status",
+        "upValue": "UP",
+        "downValue": "DOWN",
+        "updateInterval": 10000
+      },
+      "dataGrid": [
+        {
+          "label": "Traffic",
+          "key": "xyz-apikey-for-webserver",
+          "url": "https://monitoring.example.com/api/v1/webtraffic",
+          "valueField": "requestsPerSecond"
+        },
+        {
+          "label": "CPU Utilization",
+          "key": "bearer-token-secret-123",
+          "url": "https://metrics.example.com/api/v1/metrics",
+          "valueField": "cpuUtilization"
+        }
+      ],
+      "connectTo": [],
+      "lineType": "dashed",
+      "lineColor": "#3498db",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 2,
+        "density": 150,
+        "color": "#3498db",
+        "count": 5,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 1
+      }
+    },
+    {
+      "name": "teleExchange",
+      "displayName": "Telematics Exchange (Queue)",
+      "description": "Captures Streaming Data.",
+      "icon": "/assets/icons/RabbitMQ.svg", 
+      "position": { "x": 400, "y": 200 },
+      "circleColor": "#76D72A",
+      "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
+      "status": {
+        "url": "https://rabbitmq.example.com/api/overview",
+        "key": "rabbitmq-admin-token-456",
+        "valueField": "node",
+        "upValue": "running",
+        "downValue": "stopped",
+        "updateInterval": 15000
+      },
+      "dataGrid": [
+        {
+          "label": "Transactions",
+          "key": "abc-apikey-for-apiserver",
+          "url": "https://api.example.com/api/v2/transactions/count",
+          "valueField": "totalTransactions"
+        },
+        {
+          "label": "Latency",
+          "key": "session-key-secret-456",
+          "url": "https://api.example.com/api/v2/performance",
+          "valueField": "averageLatencyMs"
+        }
+      ],
+      "connectTo": [
+        {
+          "target": "telegen",
+          "outputHandle": 0,
+          "inputHandle": 0
+        }
+      ],
+      "lineType": "solid",
+      "lineColor": "#76D72A",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 1.5,
+        "density": 100,
+        "color": "#F8F8F8",
+        "count": 4,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 2
+      }
+    },
+    {
+      "name": "HDFSsink",
+      "displayName": "HDFS Sink",
+      "description": "RabbitMQ to HDFS.",
+      "icon": "🗄️",
+      "position": { "x": 700, "y": 300 },
+      "circleColor": "#e74c3c",
+      "status": {
+        "url": "https://datalake.example.com/api/health",
+        "key": "datalake-access-key-789",
+        "valueField": "cluster_status",
+        "upValue": "active",
+        "downValue": "inactive",
+        "updateInterval": 20000
+      },
+      "dataGrid": [
+        {
+          "label": "Active Connections",
+          "key": "dbUser:admin_user",
+          "url": "https://db.example.com/db/status/connections",
+          "valueField": "activeConnections"
+        },
+        {
+          "label": "Storage Size (GB)",
+          "key": "dbPass:super-secret-password-789",
+          "url": "https://db.example.com/db/status/storage",
+          "valueField": "diskSizeGb"
+        }
+      ],
+      "connectTo": [
+        {
+          "target": "teleExchange",
+          "outputHandle": 0,
+          "inputHandle": 0
+        }
+      ],
+      "lineType": "solid",
+      "lineColor": "#e74c3c",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 5,
+        "density": 200,
+        "color": "#F8F8F8",
+        "count": 5,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 1
+      }
+    },
+    {
+      "name": "EventsProc",
+      "displayName": "Events Processor",
+      "description": "Scan for vehicle events.",
+      "icon": "fa-solid fa-gears",
+      "position": { "x": 700, "y": 300 },
+      "circleColor": "#e74c3c",
+      "status": {
+        "url": "https://datalake.example.com/api/health",
+        "key": "datalake-access-key-789",
+        "valueField": "cluster_status",
+        "upValue": "active",
+        "downValue": "inactive",
+        "updateInterval": 20000
+      },
+      "dataGrid": [
+        {
+          "label": "Active Connections",
+          "key": "dbUser:admin_user",
+          "url": "https://db.example.com/db/status/connections",
+          "valueField": "activeConnections"
+        },
+        {
+          "label": "Storage Size (GB)",
+          "key": "dbPass:super-secret-password-789",
+          "url": "https://db.example.com/db/status/storage",
+          "valueField": "diskSizeGb"
+        }
+      ],
+      "connectTo": [
+        {
+          "target": "teleExchange",
+          "outputHandle": 1,
+          "inputHandle": 0
+        }
+      ],
+      "lineType": "solid",
+      "lineColor": "#e74c3c",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 5,
+        "density": 200,
+        "color": "#F8F8F8",
+        "count": 5,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 1
+      }
+    },
+    {
+      "name": "hdfs",
+      "displayName": "Tanzu Data Lake (HDFS)",
+      "description": "Long term storage for telemetry data.",
+      "icon": "/assets/icons/hadoop.svg",
+      "position": { "x": 700, "y": 300 },
+      "circleColor": "#e74c3c",
+      "status": {
+        "url": "https://datalake.example.com/api/health",
+        "key": "datalake-access-key-789",
+        "valueField": "cluster_status",
+        "upValue": "active",
+        "downValue": "inactive",
+        "updateInterval": 20000
+      },
+      "dataGrid": [
+        {
+          "label": "Active Connections",
+          "key": "dbUser:admin_user",
+          "url": "https://db.example.com/db/status/connections",
+          "valueField": "activeConnections"
+        },
+        {
+          "label": "Storage Size (GB)",
+          "key": "dbPass:super-secret-password-789",
+          "url": "https://db.example.com/db/status/storage",
+          "valueField": "diskSizeGb"
+        }
+      ],
+      "connectTo": [
+        {
+          "target": "HDFSsink",
+          "outputHandle": 1,
+          "inputHandle": 0
+        }
+      ],
+      "lineType": "solid",
+      "lineColor": "#e74c3c",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 5,
+        "density": 200,
+        "color": "#F8F8F8",
+        "count": 5,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 1
+      }
+    },
+    {
+      "name": "vehicleExchange",
+      "displayName": "Vehicle Events Exchange (Queue)",
+      "description": "Adverse Events Data.",
+      "icon": "/assets/icons/RabbitMQ.svg", 
+      "position": { "x": 400, "y": 200 },
+      "circleColor": "#76D72A",
+      "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
+      "status": {
+        "url": "https://rabbitmq.example.com/api/overview",
+        "key": "rabbitmq-admin-token-456",
+        "valueField": "node",
+        "upValue": "running",
+        "downValue": "stopped",
+        "updateInterval": 15000
+      },
+      "dataGrid": [
+        {
+          "label": "Transactions",
+          "key": "abc-apikey-for-apiserver",
+          "url": "https://api.example.com/api/v2/transactions/count",
+          "valueField": "totalTransactions"
+        },
+        {
+          "label": "Latency",
+          "key": "session-key-secret-456",
+          "url": "https://api.example.com/api/v2/performance",
+          "valueField": "averageLatencyMs"
+        }
+      ],
+      "connectTo": [
+        {
+          "target": "EventsProc",
+          "outputHandle": 0,
+          "inputHandle": 0
+        }
+      ],
+      "lineType": "solid",
+      "lineColor": "#76D72A",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 1.5,
+        "density": 100,
+        "color": "#F8F8F8",
+        "count": 4,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 2
+      }
+    },
+    {
+      "name": "JDBCsink",
+      "displayName": "JDBC Sink",
+      "description": "Sink Events to Database",
+      "icon": "fa-solid fa-database", 
+      "position": { "x": 400, "y": 200 },
+      "circleColor": "#76D72A",
+      "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
+      "status": {
+        "url": "https://rabbitmq.example.com/api/overview",
+        "key": "rabbitmq-admin-token-456",
+        "valueField": "node",
+        "upValue": "running",
+        "downValue": "stopped",
+        "updateInterval": 15000
+      },
+      "dataGrid": [
+        {
+          "label": "Transactions",
+          "key": "abc-apikey-for-apiserver",
+          "url": "https://api.example.com/api/v2/transactions/count",
+          "valueField": "totalTransactions"
+        },
+        {
+          "label": "Latency",
+          "key": "session-key-secret-456",
+          "url": "https://api.example.com/api/v2/performance",
+          "valueField": "averageLatencyMs"
+        }
+      ],
+      "connectTo": [
+        {
+          "target": "vehicleExchange",
+          "outputHandle": 0,
+          "inputHandle": 0
+        }
+      ],
+      "lineType": "solid",
+      "lineColor": "#76D72A",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 1.5,
+        "density": 100,
+        "color": "#F8F8F8",
+        "count": 4,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 1
+      }
+    },
+    {
+      "name": "gpdb",
+      "displayName": "Greenplum Warehouse",
+      "description": "Database Storage",
+      "icon": "/assets/icons/tanzu.png", 
+      "position": { "x": 400, "y": 200 },
+      "circleColor": "#76D72A",
+      "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
+      "status": {
+        "url": "https://rabbitmq.example.com/api/overview",
+        "key": "rabbitmq-admin-token-456",
+        "valueField": "node",
+        "upValue": "running",
+        "downValue": "stopped",
+        "updateInterval": 15000
+      },
+      "dataGrid": [
+        {
+          "label": "Transactions",
+          "key": "abc-apikey-for-apiserver",
+          "url": "https://api.example.com/api/v2/transactions/count",
+          "valueField": "totalTransactions"
+        },
+        {
+          "label": "Latency",
+          "key": "session-key-secret-456",
+          "url": "https://api.example.com/api/v2/performance",
+          "valueField": "averageLatencyMs"
+        }
+      ],
+      "connectTo": [
+        {
+          "target": "JDBCsink",
+          "outputHandle": 0,
+          "inputHandle": 1
+        }
+      ],
+      "lineType": "solid",
+      "lineColor": "#76D72A",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 1.5,
+        "density": 100,
+        "color": "#F8F8F8",
+        "count": 4,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 1
+      }
+    },
+    {
+      "name": "logsink",
+      "displayName": "Log Sink",
+      "description": "Represents External Processing (SMS)",
+      "icon": "📝", 
+      "position": { "x": 400, "y": 200 },
+      "circleColor": "#76D72A",
+      "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
+      "status": {
+        "url": "https://rabbitmq.example.com/api/overview",
+        "key": "rabbitmq-admin-token-456",
+        "valueField": "node",
+        "upValue": "running",
+        "downValue": "stopped",
+        "updateInterval": 15000
+      },
+      "dataGrid": [
+        {
+          "label": "Transactions",
+          "key": "abc-apikey-for-apiserver",
+          "url": "https://api.example.com/api/v2/transactions/count",
+          "valueField": "totalTransactions"
+        },
+        {
+          "label": "Latency",
+          "key": "session-key-secret-456",
+          "url": "https://api.example.com/api/v2/performance",
+          "valueField": "averageLatencyMs"
+        }
+      ],
+      "connectTo": [
+        {
+          "target": "vehicleExchange",
+          "outputHandle": 1,
+          "inputHandle": 0
+        }
+      ],
+      "lineType": "solid",
+      "lineColor": "#76D72A",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 1.5,
+        "density": 100,
+        "color": "#F8F8F8",
+        "count": 4,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 0
+      }
+    }
+  ]
+}

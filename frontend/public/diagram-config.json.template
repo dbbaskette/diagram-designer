@@ -17,6 +17,7 @@
       "icon": "fas fa-server",
       "position": { "x": 100, "y": 200 },
       "circleColor": "#3498db",
+      "url": "https://webserver-dashboard.example.com",
       "status": {
         "url": "https://monitoring.example.com/api/v1/health/webserver",
         "key": "health-check-token-123",
@@ -63,6 +64,7 @@
       "icon": "/assets/icons/RabbitMQ.svg", 
       "position": { "x": 400, "y": 200 },
       "circleColor": "#76D72A",
+      "url": "https://rabbitmq-management.example.com",
       "dataGrid": [
         {
           "label": "Transactions",
@@ -96,6 +98,7 @@
       "icon": "/assets/icons/hadoop.svg",
       "position": { "x": 700, "y": 300 },
       "circleColor": "#e74c3c",
+      "url": "https://tanzu-datalake.example.com/dashboard",
       "dataGrid": [
         {
           "label": "Active Connections",
@@ -131,9 +134,11 @@
       "name": "TestItem",
       "displayName": "Test Item",
       "description": "Testing components.",
-      "icon": "/assets/icons/tanzu.png", 
+      "icon": "/assets/icons/tanzu.png",
+      "_iconExamples": "You can also use: '🚗', '🗄️', '⚙️', '🗃️', '📝' for emoji icons", 
       "position": { "x": 700, "y": 100 },
       "circleColor": "#76D72A",
+      "url": "https://test-environment.example.com",
       "dataGrid": [
         {
           "label": "Transactions",

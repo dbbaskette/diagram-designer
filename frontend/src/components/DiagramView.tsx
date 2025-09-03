@@ -28,9 +28,10 @@ const edgeTypes = {
 
 interface DiagramViewProps {
   onConfigLoad?: (config: DiagramConfig) => void;
+  selectedDiagram?: string;
 }
 
-const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad }) => {
+const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDiagram = 'diagram-config.json' }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [config, setConfig] = useState<DiagramConfig | null>(null);
@@ -40,7 +41,7 @@ const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad }) => {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const response = await fetch('/diagram-config.json');
+        const response = await fetch(`/${selectedDiagram}`);
         const data: DiagramConfig = await response.json();
         setConfig(data);
         
@@ -49,19 +50,30 @@ const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad }) => {
           onConfigLoad(data);
         }
         
+        // Load saved positions for this diagram
+        const savedPositionsKey = `diagram-positions-${selectedDiagram}`;
+        const savedPositions = JSON.parse(localStorage.getItem(savedPositionsKey) || '{}');
+        
         // Convert config nodes to React Flow nodes
-        const flowNodes = data.nodes.map((node: DiagramNode, index: number) => ({
-          id: node.name,
-          type: 'custom',
-          position: node.position || { 
+        const flowNodes = data.nodes.map((node: DiagramNode, index: number) => {
+          // Use saved position if available, otherwise use config position or default
+          const savedPosition = savedPositions[node.name];
+          const configPosition = node.position;
+          const defaultPosition = { 
             x: index * 300 + 100, 
             y: 200 
-          },
-          data: {
-            ...node,
-            config: data.config,
-          },
-        }));
+          };
+          
+          return {
+            id: node.name,
+            type: 'custom',
+            position: savedPosition || configPosition || defaultPosition,
+            data: {
+              ...node,
+              config: data.config,
+            },
+          };
+        });
 
         // Create edges from connections (right-to-left definition)
         const flowEdges: Edge[] = [];
@@ -128,12 +140,31 @@ const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad }) => {
     };
 
     loadConfig();
-  }, []);
+  }, [selectedDiagram]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges],
   );
+
+  // Handle node position changes and save to localStorage
+  const handleNodesChange = useCallback((changes: any[]) => {
+    onNodesChange(changes);
+    
+    // Save positions when nodes are moved
+    const positionChanges = changes.filter(change => change.type === 'position' && change.position);
+    if (positionChanges.length > 0) {
+      const savedPositionsKey = `diagram-positions-${selectedDiagram}`;
+      const currentPositions = JSON.parse(localStorage.getItem(savedPositionsKey) || '{}');
+      
+      positionChanges.forEach(change => {
+        currentPositions[change.id] = change.position;
+      });
+      
+      localStorage.setItem(savedPositionsKey, JSON.stringify(currentPositions));
+      console.log(`Saved positions for ${selectedDiagram}:`, currentPositions);
+    }
+  }, [onNodesChange, selectedDiagram]);
 
   if (loading) {
     return (
@@ -165,7 +196,7 @@ const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad }) => {
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
+          onNodesChange={handleNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}

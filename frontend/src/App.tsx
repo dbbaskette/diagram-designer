@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext } from 'react';
+import { useState, createContext, useContext, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DiagramView from './components/DiagramView';
@@ -15,7 +15,71 @@ export const useConfig = () => {
   return context;
 };
 
-function Header({ connected, title }: { connected: boolean; title?: string }) {
+function DiagramSelector({ selectedDiagram, onDiagramChange }: { selectedDiagram: string; onDiagramChange: (diagram: string) => void }) {
+  const [availableDiagrams, setAvailableDiagrams] = useState<string[]>([]);
+
+  useEffect(() => {
+    const discoverDiagramFiles = async () => {
+      try {
+        // Only check for files that actually exist in your public directory
+        const knownFiles = [
+          'diagram-config.json',
+          'Telemetry-Processing.json'
+        ];
+        
+        const existingFiles: string[] = [];
+        
+        // Check each known file
+        for (const filename of knownFiles) {
+          try {
+            const response = await fetch(`/${filename}`, { method: 'HEAD' });
+            if (response.ok) {
+              existingFiles.push(filename);
+            }
+          } catch (error) {
+            // File doesn't exist, continue
+          }
+        }
+        
+        setAvailableDiagrams(existingFiles);
+        
+        // If no files found, fall back to the default
+        if (existingFiles.length === 0) {
+          setAvailableDiagrams(['diagram-config.json']);
+        }
+      } catch (error) {
+        console.error('Error discovering diagram files:', error);
+        // Fallback to known files
+        setAvailableDiagrams(['diagram-config.json']);
+      }
+    };
+
+    discoverDiagramFiles();
+  }, []);
+
+
+
+  return (
+    <select
+      value={selectedDiagram}
+      onChange={(e) => onDiagramChange(e.target.value)}
+      className="bg-gray-700 border border-gray-600 text-white rounded px-3 py-1 text-sm focus:outline-none focus:border-blue-500"
+    >
+      {availableDiagrams.map((diagram) => (
+        <option key={diagram} value={diagram}>
+          {diagram.replace('.json', '').replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function Header({ connected, title, selectedDiagram, onDiagramChange }: { 
+  connected: boolean; 
+  title?: string; 
+  selectedDiagram: string;
+  onDiagramChange: (diagram: string) => void;
+}) {
   return (
     <header className="bg-gray-800/50 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
@@ -24,6 +88,7 @@ function Header({ connected, title }: { connected: boolean; title?: string }) {
           <path d="m9 12 2 2 4-4"/>
         </svg>
         <h1 className="text-xl font-semibold text-white">{title || 'Diagram Designer'}</h1>
+        <DiagramSelector selectedDiagram={selectedDiagram} onDiagramChange={onDiagramChange} />
       </div>
       <div className="flex items-center gap-4">
         <button className="text-gray-400 hover:text-white">
@@ -127,20 +192,45 @@ function Sidebar() {
 }
 
 function App() {
-  const [connected, setConnected] = useState(true);
+  const [connected] = useState(true);
   const [config, setConfig] = useState<DiagramConfig | null>(null);
+  
+  // Load selected diagram from localStorage or default to first available
+  const [selectedDiagram, setSelectedDiagram] = useState(() => {
+    const saved = localStorage.getItem('selectedDiagram');
+    return saved || 'diagram-config.json';
+  });
+
+  // Validate that the selected diagram still exists when available diagrams change
+  useEffect(() => {
+    const availableDiagrams = ['diagram-config.json', 'Telemetry-Processing.json'];
+    if (availableDiagrams.length > 0 && !availableDiagrams.includes(selectedDiagram)) {
+      console.log(`Selected diagram "${selectedDiagram}" no longer exists, switching to first available`);
+      const newSelection = availableDiagrams[0];
+      setSelectedDiagram(newSelection);
+      localStorage.setItem('selectedDiagram', newSelection);
+    }
+  }, [selectedDiagram]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <ConfigContext.Provider value={config}>
         <Router>
           <div className="min-h-screen bg-gray-900 flex flex-col">
-            <Header connected={connected} title={config?.config.title} />
+            <Header 
+              connected={connected} 
+              title={config?.config.title} 
+              selectedDiagram={selectedDiagram}
+              onDiagramChange={(diagram) => {
+                setSelectedDiagram(diagram);
+                localStorage.setItem('selectedDiagram', diagram);
+              }}
+            />
             <div className="flex flex-1">
               <Sidebar />
               <main className="flex-1 overflow-hidden">
                 <Routes>
-                  <Route path="/" element={<DiagramView onConfigLoad={setConfig} />} />
+                  <Route path="/" element={<DiagramView onConfigLoad={setConfig} selectedDiagram={selectedDiagram} />} />
                   <Route path="/construction1" element={<ComingSoon title="Construction Feature 1" />} />
                   <Route path="/construction2" element={<ComingSoon title="Construction Feature 2" />} />
                 </Routes>

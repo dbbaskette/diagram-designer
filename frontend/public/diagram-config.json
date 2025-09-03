@@ -17,6 +17,7 @@
       "icon": "fas fa-server",
       "position": { "x": 100, "y": 200 },
       "circleColor": "#3498db",
+      "url": "https://webserver-dashboard.example.com",
       "status": {
         "url": "https://monitoring.example.com/api/v1/health/webserver",
         "key": "health-check-token-123",
@@ -63,6 +64,7 @@
       "icon": "/assets/icons/RabbitMQ.svg", 
       "position": { "x": 400, "y": 200 },
       "circleColor": "#76D72A",
+      "url": "https://rabbitmq-management.example.com",
       "status": {
         "url": "https://rabbitmq.example.com/api/overview",
         "key": "rabbitmq-admin-token-456",
@@ -115,6 +117,7 @@
       "icon": "/assets/icons/hadoop.svg",
       "position": { "x": 700, "y": 300 },
       "circleColor": "#e74c3c",
+      "url": "https://tanzu-datalake.example.com/dashboard",
       "status": {
         "url": "https://datalake.example.com/api/health",
         "key": "datalake-access-key-789",
@@ -167,6 +170,7 @@
       "icon": "/assets/icons/tanzu.png", 
       "position": { "x": 700, "y": 100 },
       "circleColor": "#76D72A",
+      "url": "https://test-environment.example.com",
       "status": {
         "url": "https://test.example.com/api/status",
         "key": "test-service-key-101",
