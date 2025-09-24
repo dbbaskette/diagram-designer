@@ -28,7 +28,6 @@ export interface DiagramNode {
   url?: string; // URL to open when component is clicked
   status?: {
     url: string;
-    key: string;
     valueField: string;
     upValue: string;
     downValue: string;
@@ -55,7 +54,6 @@ export interface DiagramNode {
 
 export interface DataGridItem {
   label: string;
-  key: string;
   url: string;
   valueField: string;
 }

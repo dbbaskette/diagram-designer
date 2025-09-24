@@ -8,6 +8,8 @@
 
 [![React](https://img.shields.io/badge/React-19.1.1-61dafb?style=for-the-badge&logo=react)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-6db33f?style=for-the-badge&logo=springboot)](https://spring.io/projects/spring-boot)
+[![Java](https://img.shields.io/badge/Java-21-ed8b00?style=for-the-badge&logo=openjdk)](https://openjdk.org/)
 [![Vite](https://img.shields.io/badge/Vite-7.x-646cff?style=for-the-badge&logo=vite)](https://vitejs.dev/)
 [![ReactFlow](https://img.shields.io/badge/ReactFlow-12.x-ff6b6b?style=for-the-badge)](https://reactflow.dev/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.x-38bdf8?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
@@ -67,12 +69,56 @@
 
 ---
 
+## 🏗️ Architecture
+
+This application uses a **hybrid Spring Boot + React architecture** for maximum flexibility and security:
+
+### 🎯 **Frontend (React + TypeScript)**
+- **Interactive UI**: Built with ReactFlow for diagram visualization
+- **Real-time Updates**: WebSocket connections for live metrics
+- **Drag & Drop**: Interactive positioning with persistent storage
+- **Multi-diagram Support**: Dynamic switching between configurations
+
+### ⚙️ **Backend (Spring Boot + Java 21)**
+- **Secure Proxy**: Handles all external API calls with authentication
+- **Configuration Processing**: Variable substitution and JSON processing
+- **Multi-format Auth**: Supports Basic, Bearer, API Key, and custom headers
+- **Flexible Deployment**: Works locally and on Cloud Foundry
+
+### 🔒 **Security Features**
+- **No Client-side Secrets**: All credentials handled server-side
+- **Dynamic Authentication**: Automatic credential matching by hostname
+- **Variable Substitution**: Secure runtime replacement of `${VARIABLES}`
+- **CORS Protection**: Configurable cross-origin policies
+
+### 📁 **Directory Structure**
+```
+diagram-designer/
+├── configs/                    # JSON diagram configurations
+├── diagram-designer-api/       # Spring Boot application module
+│   ├── src/main/java/         # Java source code
+│   ├── manifest.yml           # Cloud Foundry manifest
+│   └── pom.xml               # Module Maven configuration
+├── frontend/                   # React application
+│   ├── src/                   # TypeScript source code
+│   └── dist/                  # Built frontend assets
+├── pom.xml                    # Parent Maven configuration
+├── .config.env.template       # Environment variables template
+├── .config.env               # Local environment variables (git-ignored)
+└── deploy.sh                 # Deployment script
+```
+
+---
+
 ## 🚀 Quick Start
 
 ### 📋 Prerequisites
 
-- **Node.js** 18+ 
+- **Java** 21+
+- **Maven** 3.9+
+- **Node.js** 18+
 - **npm** or **yarn**
+- **Cloud Foundry CLI** (for deployment)
 
 ### ⚡ Installation & Development
 
@@ -81,16 +127,22 @@
 git clone <repository-url>
 cd diagram-designer
 
-# 🎯 Start local development
+# 🔧 Set up configuration
+cp .config.env.template .config.env
+# Edit .config.env with your service credentials
+
+# 🎯 Start local development (Spring Boot + React)
 ./deploy-local.sh
 ```
 
-**🌐 Open your browser to:** `http://localhost:5175`
+**🌐 Open your browser to:**
+- Frontend dev server: `http://localhost:5173`
+- Backend API: `http://localhost:3001`
 
 ### 🏗️ Build & Deploy
 
 ```bash
-# 📦 Production build
+# 📦 Production build (served locally on :8080)
 ./deploy-local-prod.sh
 
 # ☁️ Deploy to Cloud Foundry
@@ -344,25 +396,26 @@ cd diagram-designer
 
 ### 📂 **Multi-Diagram Support**
 
-- 🗂️ **Automatic Discovery**: Scans `public/` directory for JSON files
+- 🗂️ **Automatic Discovery**: Scans `configs/` directory for JSON files
 - 🔄 **Dynamic Switching**: Change diagrams without refresh
 - 💾 **Persistent Selection**: Remembers last selected diagram
 - 🚀 **Auto-Detection**: New JSON files automatically appear in selector
+- 🔒 **Secure Variable Substitution**: Environment variables injected at runtime
 
 #### 🔄 **Auto-Detection Workflow**
 
-1. **📁 Add JSON File**: Place your diagram JSON file in `frontend/public/`
-2. **🔄 Update List**: Run `./update-diagram-list.sh` to scan and update the file list
+1. **📁 Add JSON File**: Place your diagram JSON file in `configs/`
+2. **🔧 Configure Variables**: Update `.config.env` with any new credentials
 3. **✨ Auto-Appear**: Your diagram automatically appears in the selector dropdown
 4. **🎯 Select & Use**: Choose your diagram from the dropdown and start using it
 
 **Example:**
 ```bash
 # Add your new diagram file
-cp my-diagram.json frontend/public/
+cp my-diagram.json configs/
 
-# Update the diagram list
-./update-diagram-list.sh
+# Add credentials to configuration
+echo "MYSERVICE_API_KEY=abc123" >> .config.env
 
 # Your diagram now appears in the UI! 🎉
 ```
@@ -388,14 +441,11 @@ cp my-diagram.json frontend/public/
 ### 🏠 **Local Development**
 
 ```bash
-# 🔧 Development server with hot reload
+# 🔧 Development server with hot reload (Spring Boot + React)
 ./deploy-local.sh
 
 # 🏭 Production build served locally
 ./deploy-local-prod.sh
-
-# 🔄 Update diagram list (when adding new JSON files)
-./update-diagram-list.sh
 ```
 
 ### ☁️ **Cloud Foundry**
@@ -406,9 +456,18 @@ cp my-diagram.json frontend/public/
 ```
 
 **📋 Required Files:**
-- `manifest.yml` - CF application manifest
-- `Staticfile` - Buildpack configuration
+- `diagram-designer-api/manifest.yml` - CF application manifest
+- `.config.env` - Local environment variables (git-ignored)
 - `deploy.sh` - Automated deployment script
+
+**🔐 Environment Setup:**
+```bash
+# Set production credentials in Cloud Foundry
+cf set-env diagram-designer RABBITMQ_USERNAME "prod_user"
+cf set-env diagram-designer RABBITMQ_PASSWORD "prod_password"
+cf set-env diagram-designer MONITORING_API_KEY "prod_key"
+cf restage diagram-designer
+```
 
 ---
 

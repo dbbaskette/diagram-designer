@@ -45,7 +45,7 @@ const Settings: React.FC<SettingsProps> = ({ selectedDiagram, onSaveLayout, show
       const currentPositions = JSON.parse(localStorage.getItem(savedPositionsKey) || '{}');
       
       // Fetch the current diagram configuration
-      const response = await fetch(`/${selectedDiagram}`);
+      const response = await fetch(`/api/diagrams/${selectedDiagram}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch diagram configuration: ${response.statusText}`);
       }

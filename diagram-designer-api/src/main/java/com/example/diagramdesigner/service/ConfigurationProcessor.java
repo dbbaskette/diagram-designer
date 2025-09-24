@@ -1,0 +1,125 @@
+package com.example.diagramdesigner.service;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Service;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+@Service
+public class ConfigurationProcessor {
+
+    private static final Logger logger = LoggerFactory.getLogger(ConfigurationProcessor.class);
+    private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([A-Z_][A-Z0-9_]*)(:([^}]*))?\\}");
+
+    private final Environment environment;
+    private final ObjectMapper objectMapper;
+
+    public ConfigurationProcessor(Environment environment, ObjectMapper objectMapper) {
+        this.environment = environment;
+        this.objectMapper = objectMapper;
+    }
+
+    /**
+     * Process a JSON string by substituting environment variables
+     * Variables should be in the format: ${VARIABLE_NAME} or ${VARIABLE_NAME:default_value}
+     */
+    public String processVariableSubstitution(String jsonContent) {
+        if (jsonContent == null || jsonContent.isEmpty()) {
+            return jsonContent;
+        }
+
+        try {
+            // Parse the JSON
+            JsonNode rootNode = objectMapper.readTree(jsonContent);
+
+            // Process the entire tree
+            JsonNode processedNode = processNode(rootNode);
+
+            // Convert back to JSON string
+            return objectMapper.writeValueAsString(processedNode);
+
+        } catch (Exception e) {
+            logger.error("Error processing variable substitution in JSON", e);
+            // Return original content if processing fails
+            return jsonContent;
+        }
+    }
+
+    /**
+     * Process a JsonNode recursively, substituting variables in string values
+     */
+    private JsonNode processNode(JsonNode node) {
+        if (node.isTextual()) {
+            // Process string values for variable substitution
+            String originalValue = node.textValue();
+            String processedValue = substituteVariables(originalValue);
+            return new TextNode(processedValue);
+
+        } else if (node.isObject()) {
+            // Recursively process object properties
+            ObjectNode objectNode = objectMapper.createObjectNode();
+            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                objectNode.set(entry.getKey(), processNode(entry.getValue()));
+            }
+
+            return objectNode;
+
+        } else if (node.isArray()) {
+            // Recursively process array elements
+            for (int i = 0; i < node.size(); i++) {
+                ((com.fasterxml.jackson.databind.node.ArrayNode) node).set(i, processNode(node.get(i)));
+            }
+
+            return node;
+        }
+
+        // Return other types (numbers, booleans, null) unchanged
+        return node;
+    }
+
+    /**
+     * Substitute environment variables in a string
+     * Supports formats: ${VAR_NAME} and ${VAR_NAME:default_value}
+     */
+    private String substituteVariables(String input) {
+        if (input == null || !input.contains("${")) {
+            return input;
+        }
+
+        Matcher matcher = VARIABLE_PATTERN.matcher(input);
+        StringBuffer result = new StringBuffer();
+
+        while (matcher.find()) {
+            String variableName = matcher.group(1);
+            String defaultValue = matcher.group(3); // Can be null
+
+            // Get the value from environment
+            String value = environment.getProperty(variableName, defaultValue);
+
+            if (value != null) {
+                // Replace the entire pattern with the resolved value
+                matcher.appendReplacement(result, Matcher.quoteReplacement(value));
+                logger.debug("Substituted variable {} with value: {}", variableName, value);
+            } else {
+                // Keep original if no value found and no default
+                logger.warn("No value found for variable: {}", variableName);
+                matcher.appendReplacement(result, Matcher.quoteReplacement(matcher.group(0)));
+            }
+        }
+
+        matcher.appendTail(result);
+        return result.toString();
+    }
+}

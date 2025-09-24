@@ -20,7 +20,6 @@
       "url": "https://webserver-dashboard.example.com",
       "status": {
         "url": "https://monitoring.example.com/api/v1/health/webserver",
-        "key": "health-check-token-123",
         "valueField": "status",
         "upValue": "healthy",
         "downValue": "unhealthy",
@@ -29,13 +28,11 @@
       "dataGrid": [
         {
           "label": "Traffic",
-          "key": "xyz-apikey-for-webserver",
           "url": "https://monitoring.example.com/api/v1/webtraffic",
           "valueField": "requestsPerSecond"
         },
         {
           "label": "CPU Utilization",
-          "key": "bearer-token-secret-123",
           "url": "https://metrics.example.com/api/v1/metrics",
           "valueField": "cpuUtilization"
         }
@@ -67,7 +64,6 @@
       "url": "https://rabbitmq-management.example.com",
       "status": {
         "url": "https://rabbitmq.example.com/api/overview",
-        "key": "rabbitmq-admin-token-456",
         "valueField": "node",
         "upValue": "running",
         "downValue": "stopped",
@@ -76,14 +72,12 @@
       "dataGrid": [
         {
           "label": "Transactions",
-          "key": "abc-apikey-for-apiserver",
-          "url": "https://api.example.com/api/v2/transactions/count",
+                    "url": "https://api.example.com/api/v2/transactions/count",
           "valueField": "totalTransactions"
         },
         {
           "label": "Latency",
-          "key": "session-key-secret-456",
-          "url": "https://api.example.com/api/v2/performance",
+                    "url": "https://api.example.com/api/v2/performance",
           "valueField": "averageLatencyMs"
         }
       ],
@@ -120,7 +114,6 @@
       "url": "https://tanzu-datalake.example.com/dashboard",
       "status": {
         "url": "https://datalake.example.com/api/health",
-        "key": "datalake-access-key-789",
         "valueField": "cluster_status",
         "upValue": "active",
         "downValue": "inactive",
@@ -129,14 +122,12 @@
       "dataGrid": [
         {
           "label": "Active Connections",
-          "key": "dbUser:admin_user",
-          "url": "https://db.example.com/db/status/connections",
+                    "url": "https://db.example.com/db/status/connections",
           "valueField": "activeConnections"
         },
         {
           "label": "Storage Size (GB)",
-          "key": "dbPass:super-secret-password-789",
-          "url": "https://db.example.com/db/status/storage",
+                    "url": "https://db.example.com/db/status/storage",
           "valueField": "diskSizeGb"
         }
       ],
@@ -182,14 +173,12 @@
       "dataGrid": [
         {
           "label": "Transactions",
-          "key": "abc-apikey-for-apiserver",
-          "url": "https://api.example.com/api/v2/transactions/count",
+                    "url": "https://api.example.com/api/v2/transactions/count",
           "valueField": "totalTransactions"
         },
         {
           "label": "Latency",
-          "key": "session-key-secret-456",
-          "url": "https://api.example.com/api/v2/performance",
+                    "url": "https://api.example.com/api/v2/performance",
           "valueField": "averageLatencyMs"
         }
       ],

@@ -42,7 +42,7 @@ const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDiagram
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const response = await fetch(`/${selectedDiagram}`);
+        const response = await fetch(`/api/diagrams/${selectedDiagram}`);
         const data: DiagramConfig = await response.json();
         setConfig(data);
         

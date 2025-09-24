@@ -1,136 +1,193 @@
-# Project Instructions: [PROJECT NAME]
+# Diagram Designer Project
 
-> **Instructions for the User**:
+## Project Overview & Goal
 
-You are an expert in UI design and Spring Programming. We curently have a project at ../insurance-megacorp/imc-manager that has a unique UI design that we
-want to generalize.  We want the exact same layout of icon tool bar on left , title at top, and we will want a main page with our diagram  in the display pane.  We will have 3 icons on left (main page, construction icon 1, construction icon 2) the main page icon brings you to the defautl display which is JUST a flow diagram. (ask me for pictures).  the other to will take you to displays that say COming soon or something. What we want to do is take the look and feel of the dataflow diagram and externalize the config into a JSON file that lets us give an name, icon, description, then 2 Keys and 2 API endpoints to get the 2 values (these are in the grid).  Then we need someway to define what the item connects to on its left or from above (if we choose vertical layout), and whether we want a solid or dashed line, and if the line has particles moving (either one way or bidirectionally).).... there should be a config section at top that lets us define horizontal or vertical layout.
+**Primary Goal**: Create a platform for building interactive, real-time system architecture diagrams with secure authentication and dynamic configuration.
 
----
+**End Users**: Developers, system architects, and operations teams who need to visualize system dataflows with live metrics.
 
-## 1. Project Overview & Goal
+## Current Status
 
-*   **What is the primary goal of this project?**
-    *   The Purpose is to give the user a platform to quickly build dataflow diagrams
-*   **Who are the end-users?**
-    *  Demo Developers
+✅ **Completed Features**:
+- Spring Boot + React hybrid architecture
+- Secure variable substitution system
+- Dynamic authentication for any service
+- Interactive drag & drop positioning
+- Multi-diagram support
+- Real-time metrics display
+- Animated particle flows
+- Cloud Foundry deployment ready
 
-## 2. Tech Stack
+## Tech Stack
 
-*   **Language(s) & Version(s)**: Java 21, Spring Boot 3.5.5, REact 18+, NodeJS, TypeScript + Vite
-*   **Key Libraries**: 
-*   **Build/Package Manager**: Maven, Git (Remote is https://github.com/dbbaskette/diagram-designer)
+### Backend
+- **Java 21** with **Spring Boot 3.5.6**
+- **Maven** for build management
+- **Spring WebClient** for reactive HTTP calls
+- **Jackson** for JSON processing
 
-## 3. Architecture & Design
+### Frontend
+- **React 19.1.1** with **TypeScript 5.x**
+- **Vite 7.x** for build tooling
+- **ReactFlow 12.x** for diagram visualization
+- **TailwindCSS 3.x** for styling
+- **@tanstack/react-query** for state management
 
-*   **Directory Structure**: Briefly describe the purpose of key directories.
-    *   `src/main/java/com/baskettecase/diagramdesigner/`: Main application source
-    *   `src/main/resources/`: Configuration files
-    *   `docs/`: Project documentation
+### Deployment
+- **Cloud Foundry** ready
+- **Local development** with hot reload
+- **Environment variable** based configuration
 
-## 4. Coding Standards & Conventions
+## Architecture & Design
 
-*   **Code Style**: Google Java Style Guide, Sprin Best Practice
-*   **Naming Conventions**: Use `camelCase` for variables", "Services should be suffixed with `Service`"
-*   **API Design**: "RESTful, follow standard HTTP verbs"
-*   **Error Handling**: "Use custom exception classes", "Return standardized JSON error responses"
+### Directory Structure
+```
+diagram-designer/
+├── configs/                    # JSON diagram configurations
+├── backend/                    # Spring Boot application
+│   ├── src/main/java/         # Java source code
+│   └── manifest.yml           # Cloud Foundry manifest
+├── frontend/                   # React application
+│   ├── src/                   # TypeScript source code
+│   └── dist/                  # Built frontend assets
+├── .config.env.template       # Environment variables template
+├── .config.env               # Local environment variables (git-ignored)
+└── deploy.sh                 # Deployment script
+```
 
-## 5. Important "Do's and Don'ts"
+### Key Components
 
-*   **DO**: "Write unit tests for all new business logic."
-*   **DON'T**:  "Do not commit secrets or API keys directly into the repository."
-*   **DO**: ( "Log important events and errors."
+**Spring Boot Backend**:
+- `DiagramController` - Serves JSON configs with variable substitution
+- `MetricsProxyController` - Proxies API calls with authentication
+- `AuthenticationResolver` - Dynamic credential matching
+- `ConfigurationProcessor` - Handles `${VARIABLE}` substitution
 
+**React Frontend**:
+- `DiagramView` - Main diagram visualization
+- `CustomNode` - Interactive diagram nodes
+- `Settings` - Configuration management
+- `App` - Main application and routing
 
+## Security Features
+
+1. **No Client-side Secrets**: All credentials handled server-side
+2. **Dynamic Authentication**: Automatic credential matching by hostname patterns
+3. **Variable Substitution**: Runtime replacement of `${VARIABLES}` in JSON
+4. **CORS Protection**: Configurable cross-origin policies
+5. **Git-safe Configuration**: Sensitive data never committed
+
+## Authentication Patterns
+
+The system supports multiple authentication methods:
+- **Basic Auth**: `SERVICE_USERNAME` + `SERVICE_PASSWORD`
+- **API Keys**: `SERVICE_API_KEY` → `X-API-Key` header
+- **Bearer Tokens**: `SERVICE_BEARER_TOKEN` → `Authorization: Bearer`
+- **Custom Headers**: `SERVICE_CLIENT_ID` + `SERVICE_CLIENT_HEADER`
+
+## Configuration System
+
+### Environment Variables (.config.env)
+```bash
+# Service credentials
+RABBITMQ_USERNAME=admin
+RABBITMQ_PASSWORD=secret123
+MONITORING_API_KEY=abc123xyz789
+PROMETHEUS_BEARER_TOKEN=jwt_token_here
+```
+
+### JSON Configuration (configs/*.json)
+```json
 {
   "config": {
+    "title": "My System",
     "layout": "horizontal",
-    "updateInterval": 30000,
-    "title": "System Architecture Diagram"
+    "updateInterval": 30000
   },
   "nodes": [
     {
-      "name": "WebServer-01",
+      "name": "web-server",
       "displayName": "Web Server",
-      "description": "Handles incoming HTTP requests from clients and serves static content.",
       "icon": "fas fa-server",
+      "url": "https://${WEB_HOSTNAME:web.example.com}",
+      "status": {
+        "url": "https://${WEB_HOSTNAME}/health"
+      },
       "dataGrid": [
         {
-          "label": "Traffic",
-          "key": "xyz-apikey-for-webserver",
-          "url": "https://monitoring.example.com/api/v1/webtraffic",
-          "valueField": "requestsPerSecond"
-        },
-        {
-          "label": "CPU Utilization",
-          "key": "bearer-token-secret-123",
-          "url": "https://metrics.example.com/api/v1/metrics",
-          "valueField": "cpuUtilization"
+          "label": "Requests/sec",
+          "url": "https://${WEB_HOSTNAME}/metrics",
+          "valueField": "requests_per_second"
         }
       ],
-      "connectTo": ["APIServer-Main", "LoadBalancer-Primary"],
-      "lineType": "dashed",
-      "lineColor": "#3498db",
+      "connectTo": ["database"],
       "particles": {
         "enabled": true,
-        "speed": 2,
-        "density": 150,
+        "speed": 3,
         "color": "#3498db"
-      }
-    },
-    {
-      "name": "APIServer-Main",
-      "displayName": "API Server",
-      "description": "Processes business logic and interacts with the database.",
-      "icon": "fas fa-cogs",
-      "dataGrid": [
-        {
-          "label": "Transactions",
-          "key": "abc-apikey-for-apiserver",
-          "url": "https://api.example.com/api/v2/transactions/count",
-          "valueField": "totalTransactions"
-        },
-        {
-          "label": "Latency",
-          "key": "session-key-secret-456",
-          "url": "https://api.example.com/api/v2/performance",
-          "valueField": "averageLatencyMs"
-        }
-      ],
-      "connectTo": ["Database-Primary"],
-      "lineType": "solid",
-      "lineColor": "#2ecc71",
-      "particles": {
-        "enabled": false
-      }
-    },
-    {
-      "name": "Database-Primary",
-      "displayName": "Primary Database",
-      "description": "Persistent storage for all application data.",
-      "icon": "fas fa-database",
-      "dataGrid": [
-        {
-          "label": "Active Connections",
-          "key": "dbUser:admin_user",
-          "url": "https://db.example.com/db/status/connections",
-          "valueField": "activeConnections"
-        },
-        {
-          "label": "Storage Size (GB)",
-          "key": "dbPass:super-secret-password-789",
-          "url": "https://db.example.com/db/status/storage",
-          "valueField": "diskSizeGb"
-        }
-      ],
-      "connectTo": [],
-      "lineType": "solid",
-      "lineColor": "#e74c3c",
-      "particles": {
-        "enabled": true,
-        "speed": 1,
-        "density": 100,
-        "color": "#e74c3c"
       }
     }
   ]
 }
+```
+
+## Coding Standards & Conventions
+
+### Java (Backend)
+- **Style**: Google Java Style Guide + Spring Boot best practices
+- **Naming**: `camelCase` for variables, `PascalCase` for classes
+- **Services**: Suffix with `Service` (e.g., `MetricsProxyService`)
+- **Controllers**: Suffix with `Controller` (e.g., `DiagramController`)
+- **Error Handling**: Use `ResponseEntity<?>` with appropriate HTTP status codes
+
+### TypeScript (Frontend)
+- **Style**: Standard TypeScript/React conventions
+- **Components**: PascalCase function components
+- **Props**: Defined interfaces for all component props
+- **State**: Use React hooks and @tanstack/react-query for server state
+
+### API Design
+- **RESTful**: Standard HTTP verbs (GET, POST, PUT, DELETE)
+- **Endpoints**: `/api/diagrams`, `/api/proxy/**`
+- **CORS**: Properly configured for development and production
+
+## Important Do's and Don'ts
+
+### DO
+✅ Write unit tests for all new business logic
+✅ Log important events and errors
+✅ Use environment variables for all secrets
+✅ Follow Spring Boot security best practices
+✅ Validate JSON configurations
+✅ Handle authentication errors gracefully
+
+### DON'T
+❌ Commit secrets or API keys to repository
+❌ Hardcode service-specific logic (keep it generic)
+❌ Expose internal service URLs to frontend
+❌ Use `@CrossOrigin(origins = "*")` in production
+❌ Log sensitive data (passwords, tokens)
+❌ Skip error handling for external API calls
+
+## Development Workflow
+
+### Local Development
+1. Copy `.config.env.template` to `.config.env`
+2. Add your service credentials to `.config.env`
+3. Place JSON configs in `configs/` directory
+4. Run `./deploy-local.sh` for development server
+5. Access at `http://localhost:8080`
+
+### Production Deployment
+1. Set environment variables in Cloud Foundry
+2. Run `./deploy.sh` for automated deployment
+3. Monitor logs with `cf logs diagram-designer`
+
+## Future Enhancements
+
+- [ ] WebSocket support for real-time updates
+- [ ] User authentication and authorization
+- [ ] Diagram versioning and history
+- [ ] Template library for common architectures
+- [ ] Export to various formats (PNG, PDF, etc.)
+- [ ] Integration with monitoring systems (Grafana, Datadog)

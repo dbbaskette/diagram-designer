@@ -23,8 +23,7 @@
       "url": "https://imc-telematics-gen.apps.tas-ndc.kuhn-labs.com/",
       "status": {
         "url": "https://imc-telematics-gen.apps.tas-ndc.kuhn-labs.com/actuator/health",
-        "key": "health-check-token-123",
-        "valueField": "status",
+                "valueField": "status",
         "upValue": "UP",
         "downValue": "DOWN",
         "updateInterval": 10000
@@ -32,14 +31,12 @@
       "dataGrid": [
         {
           "label": "Traffic",
-          "key": "xyz-apikey-for-webserver",
-          "url": "https://monitoring.example.com/api/v1/webtraffic",
+                    "url": "https://monitoring.example.com/api/v1/webtraffic",
           "valueField": "requestsPerSecond"
         },
         {
           "label": "CPU Utilization",
-          "key": "bearer-token-secret-123",
-          "url": "https://metrics.example.com/api/v1/metrics",
+                    "url": "https://metrics.example.com/api/v1/metrics",
           "valueField": "cpuUtilization"
         }
       ],

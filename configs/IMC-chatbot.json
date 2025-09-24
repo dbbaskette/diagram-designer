@@ -20,14 +20,12 @@
       "dataGrid": [
         {
           "label": "Active Users",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/webapp/users",
+                    "url": "https://metrics.example.com/webapp/users",
           "valueField": "activeUsers"
         },
         {
           "label": "Page Views",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/webapp/views",
+                    "url": "https://metrics.example.com/webapp/views",
           "valueField": "viewsPerMin"
         }
       ],
@@ -48,14 +46,12 @@
       "dataGrid": [
         {
           "label": "Conversations",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/chatbot/convos",
+                    "url": "https://metrics.example.com/chatbot/convos",
           "valueField": "activeConvos"
         },
         {
           "label": "Queries/hr",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/chatbot/queries",
+                    "url": "https://metrics.example.com/chatbot/queries",
           "valueField": "queriesPerHour"
         }
       ],
@@ -76,14 +72,12 @@
       "dataGrid": [
         {
           "label": "API Calls",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/mcp/apicalls",
+                    "url": "https://metrics.example.com/mcp/apicalls",
           "valueField": "callsPerSec"
         },
         {
           "label": "Avg Latency",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/mcp/latency",
+                    "url": "https://metrics.example.com/mcp/latency",
           "valueField": "avgLatencyMs"
         }
       ],
@@ -107,14 +101,12 @@
       "dataGrid": [
         {
           "label": "Tokens/sec",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/llm/tokens",
+                    "url": "https://metrics.example.com/llm/tokens",
           "valueField": "tokensPerSec"
         },
         {
           "label": "Model Status",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/llm/status",
+                    "url": "https://metrics.example.com/llm/status",
           "valueField": "status"
         }
       ],
@@ -137,14 +129,12 @@
       "dataGrid": [
         {
           "label": "Vector Count",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/vectordb/count",
+                    "url": "https://metrics.example.com/vectordb/count",
           "valueField": "vectorCount"
         },
         {
           "label": "Index Size",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/vectordb/size",
+                    "url": "https://metrics.example.com/vectordb/size",
           "valueField": "indexSizeGB"
         }
       ],
@@ -168,14 +158,12 @@
       "dataGrid": [
         {
           "label": "Total Policies",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/lakehouse/policies",
+                    "url": "https://metrics.example.com/lakehouse/policies",
           "valueField": "policyCount"
         },
         {
           "label": "Storage Used",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/lakehouse/storage",
+                    "url": "https://metrics.example.com/lakehouse/storage",
           "valueField": "storageTB"
         }
       ],
@@ -202,14 +190,12 @@
       "dataGrid": [
         {
           "label": "Jobs Running",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/dataflow/jobs",
+                    "url": "https://metrics.example.com/dataflow/jobs",
           "valueField": "runningJobs"
         },
         {
           "label": "Data Volume",
-          "key": "placeholder-key",
-          "url": "https://metrics.example.com/dataflow/volume",
+                    "url": "https://metrics.example.com/dataflow/volume",
           "valueField": "volumeMBps"
         }
       ],

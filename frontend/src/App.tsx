@@ -24,7 +24,7 @@ function DiagramSelector({ selectedDiagram, onDiagramChange }: { selectedDiagram
       try {
         // First try to get the list from our API endpoint
         try {
-          const response = await fetch('/api/list-diagrams.json');
+          const response = await fetch('/api/diagrams');
           if (response.ok) {
             const fileList = await response.json();
             setAvailableDiagrams(fileList);
@@ -228,7 +228,7 @@ function App() {
         // Get current available diagrams
         let availableDiagrams: string[] = [];
         try {
-          const response = await fetch('/api/list-diagrams.json');
+          const response = await fetch('/api/diagrams');
           if (response.ok) {
             availableDiagrams = await response.json();
           }

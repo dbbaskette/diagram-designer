@@ -1,0 +1,69 @@
+spring:
+  application:
+    name: diagram-designer-api
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.example.diagramdesigner: ${LOG_LEVEL:INFO}
+    org.springframework.web.reactive.function.client: ${HTTP_CLIENT_LOG_LEVEL:WARN}
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Metrics Proxy Configuration
+metrics:
+  proxy:
+    timeout-ms: ${PROXY_TIMEOUT_MS:10000}
+    enable-caching: ${ENABLE_CACHING:true}
+    cache-ttl-ms: ${CACHE_TTL_MS:30000}
+
+    # Authentication configurations are now dynamic
+    # The service will read environment variables and match them to URLs
+    # Pattern: <SERVICE_NAME>_USERNAME, <SERVICE_NAME>_PASSWORD, <SERVICE_NAME>_API_KEY, etc.
+
+---
+# Development profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+server:
+  port: 3001
+
+logging:
+  level:
+    com.example.diagramdesigner: DEBUG
+    org.springframework.web.reactive.function.client: DEBUG
+
+metrics:
+  proxy:
+    enable-caching: false
+
+---
+# Production profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+logging:
+  level:
+    root: WARN
+    com.example.diagramdesigner: INFO
+
+metrics:
+  proxy:
+    timeout-ms: 5000
+    cache-ttl-ms: 60000

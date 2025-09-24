@@ -1,0 +1,34 @@
+---
+applications:
+  - name: diagram-designer
+    memory: 768M
+    instances: 1
+    buildpacks:
+      - java_buildpack_offline
+    path: target/diagram-designer-api-1.0.0.jar
+    env:
+      SPRING_PROFILES_ACTIVE: prod
+      JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 21.+ }, memory_calculator: { stack_threads: 200 } }'
+      # Override port for Cloud Foundry
+      #SERVER_PORT: 8080
+
+      # Logging configuration
+      LOG_LEVEL: INFO
+      HTTP_CLIENT_LOG_LEVEL: WARN
+
+      # Proxy configuration
+      PROXY_TIMEOUT_MS: 5000
+      ENABLE_CACHING: true
+      CACHE_TTL_MS: 60000
+
+      # Authentication credentials (set these via cf set-env)
+      # RABBITMQ_USERNAME: will be set via cf set-env
+      # RABBITMQ_PASSWORD: will be set via cf set-env
+      # MONITORING_API_KEY: will be set via cf set-env
+      # METRICS_BEARER_TOKEN: will be set via cf set-env
+      # API_CLIENT_ID: will be set via cf set-env
+
+    services:
+      # Add your service bindings here if needed
+      # - my-database-service
+      # - my-redis-service

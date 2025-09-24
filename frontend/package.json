@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:with-proxy": "concurrently \"npm run dev\" \"npm run proxy\"",
+    "proxy": "cd ../backend && npm start",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "setup": "npm install && cd ../backend && npm install",
+    "start:full": "npm run setup && npm run dev:with-proxy"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.0.0",
@@ -26,6 +30,7 @@
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^8.2.2",
     "eslint": "^9.33.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",

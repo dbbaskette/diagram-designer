@@ -1,0 +1,174 @@
+{
+  "config": {
+    "layout": "horizontal",
+    "updateInterval": 30000,
+    "title": "System Architecture Diagram",
+    "nodeGlow": {
+      "enabled": true,
+      "intensity": 8,
+      "spread": 12
+    }
+  },
+  "nodes": [
+    {
+      "name": "WebServer-01",
+      "displayName": "Web Server",
+      "description": "Handles incoming HTTP requests from clients and serves static content.",
+      "icon": "fas fa-server",
+      "position": { "x": 100, "y": 200 },
+      "circleColor": "#3498db",
+      "url": "https://webserver-dashboard.example.com",
+      "status": {
+        "url": "https://monitoring.example.com/api/v1/health/webserver",
+        "key": "health-check-token-123",
+        "valueField": "status",
+        "upValue": "healthy",
+        "downValue": "unhealthy",
+        "updateInterval": 10000
+      },
+      "dataGrid": [
+        {
+          "label": "Traffic",
+          "key": "xyz-apikey-for-webserver",
+          "url": "https://monitoring.example.com/api/v1/webtraffic",
+          "valueField": "requestsPerSecond"
+        },
+        {
+          "label": "CPU Utilization",
+          "key": "bearer-token-secret-123",
+          "url": "https://metrics.example.com/api/v1/metrics",
+          "valueField": "cpuUtilization"
+        }
+      ],
+      "connectTo": [],
+      "lineType": "dashed",
+      "lineColor": "#3498db",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 2,
+        "density": 150,
+        "color": "#3498db",
+        "count": 5,
+        "direction": "source"
+      },
+      "handles": {
+        "input": 1,
+        "output": 1
+      }
+    },
+    {
+      "name": "Data Exchange",
+      "displayName": "RabbitMQ",
+      "description": "Captures Streaming Data.",
+      "icon": "/assets/icons/RabbitMQ.svg", 
+      "position": { "x": 400, "y": 200 },
+      "circleColor": "#76D72A",
+      "url": "https://rabbitmq-management.example.com",
+      "dataGrid": [
+        {
+          "label": "Transactions",
+          "key": "abc-apikey-for-apiserver",
+          "url": "https://api.example.com/api/v2/transactions/count",
+          "valueField": "totalTransactions"
+        },
+        {
+          "label": "Latency",
+          "key": "session-key-secret-456",
+          "url": "https://api.example.com/api/v2/performance",
+          "valueField": "averageLatencyMs"
+        }
+      ],
+      "connectTo": ["WebServer-01"],
+      "lineType": "solid",
+      "lineColor": "#2ecc71",
+      "edgeType": "smoothstep",
+      "particles": {
+        "enabled": false
+      },
+      "handles": {
+        "input": 1,
+        "output": 2
+      }
+    },
+    {
+      "name": "TanzuDatalake",
+      "displayName": "Tanzu Datalake",
+      "description": "Persistent storage for all application data.",
+      "icon": "/assets/icons/hadoop.svg",
+      "position": { "x": 700, "y": 300 },
+      "circleColor": "#e74c3c",
+      "url": "https://tanzu-datalake.example.com/dashboard",
+      "dataGrid": [
+        {
+          "label": "Active Connections",
+          "key": "dbUser:admin_user",
+          "url": "https://db.example.com/db/status/connections",
+          "valueField": "activeConnections"
+        },
+        {
+          "label": "Storage Size (GB)",
+          "key": "dbPass:super-secret-password-789",
+          "url": "https://db.example.com/db/status/storage",
+          "valueField": "diskSizeGb"
+        }
+      ],
+      "connectTo": [{"target": "Data Exchange", "outputHandle": 1}],
+      "lineType": "solid",
+      "lineColor": "#e74c3c",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 1,
+        "density": 100,
+        "color": "#e74c3c",
+        "count": 3,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 1
+      }
+    },
+    {
+      "name": "TestItem",
+      "displayName": "Test Item",
+      "description": "Testing components.",
+      "icon": "/assets/icons/tanzu.png",
+      "_iconExamples": "You can also use: '🚗', '🗄️', '⚙️', '🗃️', '📝' for emoji icons", 
+      "position": { "x": 700, "y": 100 },
+      "circleColor": "#76D72A",
+      "url": "https://test-environment.example.com",
+      "dataGrid": [
+        {
+          "label": "Transactions",
+          "key": "abc-apikey-for-apiserver",
+          "url": "https://api.example.com/api/v2/transactions/count",
+          "valueField": "totalTransactions"
+        },
+        {
+          "label": "Latency",
+          "key": "session-key-secret-456",
+          "url": "https://api.example.com/api/v2/performance",
+          "valueField": "averageLatencyMs"
+        }
+      ],
+      "connectTo": [{"target": "Data Exchange", "outputHandle": 0}],
+      "lineType": "solid",
+      "lineColor": "#2ecc71",
+      "edgeType": "default",
+      "particles": {
+        "enabled": true,
+        "speed": 1,
+        "density": 100,
+        "color": "#e74c3c",
+        "count": 3,
+        "direction": "source"
+      },
+      "handles": {
+        "input": 1,
+        "output": 1
+      }
+    }
+  ]
+}

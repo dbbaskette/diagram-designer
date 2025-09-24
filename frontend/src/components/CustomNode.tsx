@@ -1,7 +1,72 @@
 import React, { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import type { NodeProps } from 'reactflow';
-import type { NodeData } from '../types/diagram';
+import type { NodeData, DataGridItem } from '../types/diagram';
+import { buildMetricsUrl, log, appConfig } from '../config/appConfig';
+
+// Component for individual metric rows
+const MetricRow: React.FC<{ metric: DataGridItem; nodeName: string }> = ({ metric, nodeName }) => {
+  const [value, setValue] = useState<string>('Loading...');
+  const [error, setError] = useState<boolean>(false);
+
+  useEffect(() => {
+    const fetchMetric = async () => {
+      try {
+        const proxyUrl = buildMetricsUrl(metric.url);
+        log.debug(`Fetching metric for ${nodeName}:`, proxyUrl);
+
+        const response = await fetch(proxyUrl);
+
+        if (response.ok) {
+          const data = await response.json();
+          const metricValue = data[metric.valueField];
+
+          if (metricValue !== undefined && metricValue !== null) {
+            // Format numbers nicely
+            const formatted = typeof metricValue === 'number'
+              ? metricValue.toLocaleString()
+              : metricValue.toString();
+            setValue(formatted);
+            setError(false);
+          } else {
+            setValue('N/A');
+            setError(true);
+            log.warn(`Field '${metric.valueField}' not found in response for ${nodeName}`);
+          }
+        } else {
+          setValue('N/A');
+          setError(true);
+          log.warn(`Metric fetch failed for ${nodeName}: ${response.status}`);
+        }
+      } catch (err) {
+        if (appConfig.development.enableMockData) {
+          // Show mock data in development
+          const mockValue = Math.floor(Math.random() * 1000);
+          setValue(mockValue.toLocaleString());
+          setError(false);
+        } else {
+          setValue('N/A');
+          setError(true);
+        }
+        log.error(`Metric fetch error for ${nodeName}:`, err);
+      }
+    };
+
+    fetchMetric();
+    // Refresh metrics every 30 seconds
+    const interval = setInterval(fetchMetric, 30000);
+    return () => clearInterval(interval);
+  }, [metric.url, metric.valueField, nodeName]);
+
+  return (
+    <div className="diagram-node-metric-row">
+      <div className="diagram-node-metric-label">{metric.label}</div>
+      <div className={`diagram-node-metric-value ${error ? 'text-gray-400' : ''}`}>
+        {value}
+      </div>
+    </div>
+  );
+};
 
 const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
   // Get handle configuration from node data
@@ -11,80 +76,74 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
   // Status monitoring state
   const [status, setStatus] = useState<'up' | 'down' | 'unknown'>('unknown');
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   
   // Status checking function
   const checkStatus = async () => {
     if (!data.status) return;
     
     try {
-      console.log(`Checking status for ${data.name}:`, {
+      log.debug(`Checking status for ${data.name}:`, {
         url: data.status.url,
         valueField: data.status.valueField,
         upValue: data.status.upValue,
         downValue: data.status.downValue
       });
-      
-      // Try direct fetch first, then fallback to mock for development
-      let response;
-      try {
-        response = await fetch(data.status.url, {
-          method: 'GET',
-          mode: 'cors',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-      } catch (corsError) {
-        console.log(`CORS error for ${data.name}, using mock data for development`);
-        // Mock the response for development
-        const mockResult = { [data.status.valueField]: data.status.upValue };
-        console.log(`Mock response for ${data.name}:`, mockResult);
-        
-        if (mockResult[data.status.valueField] === data.status.upValue) {
-          console.log(`Setting status to UP for ${data.name} (mocked)`);
-          setStatus('up');
-        } else if (mockResult[data.status.valueField] === data.status.downValue) {
-          console.log(`Setting status to DOWN for ${data.name} (mocked)`);
-          setStatus('down');
-        } else {
-          console.log(`Setting status to UNKNOWN for ${data.name} (mocked)`);
-          setStatus('unknown');
+
+      // Use the metrics proxy for all requests
+      const proxyUrl = buildMetricsUrl(data.status.url);
+      log.debug(`Using proxy URL: ${proxyUrl}`);
+
+      const response = await fetch(proxyUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
         }
-        setLastChecked(new Date());
-        return;
-      }
-      
-      console.log(`Response status: ${response.status} for ${data.name}`);
-      
+      });
+
+      log.debug(`Response status: ${response.status} for ${data.name}`);
+
       if (response.ok) {
         const result = await response.json();
-        console.log(`Full response for ${data.name}:`, result);
-        
+        log.debug(`Response data for ${data.name}:`, result);
+
         const statusValue = result[data.status.valueField];
-        console.log(`Extracted status value: "${statusValue}" for ${data.name}`);
-        
+        log.debug(`Extracted status value: "${statusValue}" for ${data.name}`);
+
         if (statusValue === data.status.upValue) {
-          console.log(`Setting status to UP for ${data.name}`);
           setStatus('up');
+          setStatusError(null);
         } else if (statusValue === data.status.downValue) {
-          console.log(`Setting status to DOWN for ${data.name}`);
           setStatus('down');
+          setStatusError(null);
         } else {
-          console.log(`Setting status to UNKNOWN for ${data.name} - value "${statusValue}" doesn't match up/down values`);
           setStatus('unknown');
+          setStatusError(`Unexpected value: ${statusValue}`);
         }
       } else {
-        console.log(`HTTP error ${response.status} for ${data.name}`);
-        // For development, treat HTTP errors as UP to avoid blocking the UI
-        console.log(`Treating HTTP error as UP for development: ${data.name}`);
-        setStatus('up');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        log.warn(`HTTP ${response.status} for ${data.name}:`, errorData);
+
+        if (appConfig.development.enableMockData) {
+          // Mock as UP for development
+          setStatus('up');
+          setStatusError('Mocked (dev mode)');
+        } else {
+          setStatus('unknown');
+          setStatusError(`HTTP ${response.status}: ${errorData.error || 'Service error'}`);
+        }
       }
     } catch (error) {
-      console.error(`Status check failed for ${data.name}:`, error);
-      
-      // For development, mock the status as UP when any error occurs
-      console.log(`Error detected for ${data.name}, mocking status as UP for development`);
-      setStatus('up');
+      log.error(`Status check failed for ${data.name}:`, error);
+
+      if (appConfig.development.enableMockData) {
+        // Mock as UP for development
+        setStatus('up');
+        setStatusError('Mocked (network error)');
+      } else {
+        setStatus('unknown');
+        setStatusError(error instanceof Error ? error.message : 'Network error');
+      }
     }
     
     setLastChecked(new Date());
@@ -213,7 +272,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
               status === 'down' ? 'bg-red-500' : 
               'bg-yellow-500'
             }`}
-            title={`Status: ${status}${lastChecked ? ` (Last checked: ${lastChecked.toLocaleTimeString()})` : ''}`}
+            title={`Status: ${status}${statusError ? ` (${statusError})` : ''}${lastChecked ? ` (Last checked: ${lastChecked.toLocaleTimeString()})` : ''}`}
           ></div>
         </div>
       </div>
@@ -227,12 +286,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
       {/* Metrics Table with Grid Lines - Below info */}
       <div className="diagram-node-metrics-grid">
         {data.dataGrid.map((item, index) => (
-          <div key={index} className="diagram-node-metric-row">
-            <div className="diagram-node-metric-label">{item.label}</div>
-            <div className="diagram-node-metric-value">
-              {Math.floor(Math.random() * 1000).toLocaleString()}
-            </div>
-          </div>
+          <MetricRow key={index} metric={item} nodeName={data.name} />
         ))}
       </div>
 
