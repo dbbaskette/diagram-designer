@@ -14,9 +14,11 @@
 [![ReactFlow](https://img.shields.io/badge/ReactFlow-12.x-ff6b6b?style=for-the-badge)](https://reactflow.dev/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.x-38bdf8?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
 
-*Create stunning, interactive system diagrams with real-time metrics, animated particles, and dynamic status monitoring*
+*Create stunning, interactive system diagrams with real-time metrics, animated particles, and enterprise-grade authentication*
 
-[🌐 Live Demo](#-deployment) | [📖 Documentation](#-configuration-guide) | [🚀 Quick Start](#-quick-start)
+**✨ NEW: Hybrid Authentication System with Cloud Foundry Service Registry Integration!**
+
+[🌐 Live Demo](#-deployment) | [🔐 Authentication Guide](#-advanced-authentication-system) | [📖 Documentation](#-configuration-guide) | [🚀 Quick Start](#-quick-start)
 
 </div>
 
@@ -85,13 +87,15 @@ This application uses a **hybrid Spring Boot + React architecture** for maximum 
 - **Multi-format Auth**: Supports Basic, Bearer, API Key, and custom headers
 - **Flexible Deployment**: Works locally and on Cloud Foundry
 
-### 🔒 **Security Features**
-- **No Client-side Secrets**: All credentials handled server-side
-- **Node-Based Authentication**: Generic credentials using node names
-- **Multiple Auth Methods**: Basic, Bearer, API Key, and custom headers
-- **Dynamic Authentication**: Automatic credential matching by hostname
-- **Variable Substitution**: Secure runtime replacement of `${VARIABLES}`
-- **CORS Protection**: Configurable cross-origin policies
+### 🔒 **Enterprise Security Features**
+- **🚫 Zero Client-side Secrets**: All credentials handled server-side
+- **🎯 Node-Based Authentication**: Generic credentials using node names
+- **☁️ Service Registry Integration**: Automatic CF service binding support
+- **🛡️ Multiple Auth Methods**: Basic, Bearer, API Key, and custom headers
+- **🧠 Smart Credential Resolution**: Priority-based authentication with fallbacks
+- **🔄 Dynamic Discovery**: Automatic service URL and credential resolution
+- **🔐 Variable Substitution**: Secure runtime replacement of `${VARIABLES}`
+- **🛡️ Enhanced CORS Protection**: Configurable cross-origin policies
 
 ### 📁 **Directory Structure**
 ```
@@ -450,141 +454,438 @@ echo "MYSERVICE_API_KEY=abc123" >> .config.env
 ./deploy-local-prod.sh
 ```
 
-### ☁️ **Cloud Foundry**
+### ☁️ **Enterprise Cloud Foundry Deployment**
+
+<div align="center">
+
+#### 🚀 **One-Command Deployment with Service Discovery**
+
+</div>
 
 ```bash
-# 🚀 Deploy to Cloud Foundry
+# 🚀 Deploy to Cloud Foundry with automatic service binding
 ./deploy.sh
 ```
 
-**📋 Required Files:**
-- `diagram-designer-api/manifest.yml` - CF application manifest
-- `.config.env` - Local environment variables (git-ignored)
-- `deploy.sh` - Automated deployment script
+**📋 Deployment Features:**
+- 🏗️ **Automated Build**: Maven builds both backend and frontend
+- 📦 **Asset Optimization**: Vite optimizes frontend assets
+- ☁️ **Service Binding**: Automatically binds to `imc-services` and `messaging` services
+- 🔐 **Credential Injection**: Environment variables set from `.config.env`
+- 🔄 **Zero-Downtime**: Rolling deployment with health checks
 
-**🔐 Environment Setup:**
+---
 
-The deployment script automatically sets environment variables from `.config.env`:
+#### 🛠️ **Service Binding Configuration**
 
-```bash
-# Add credentials to .config.env
-echo "TELEEXCHANGE_USERNAME=prod_user" >> .config.env
-echo "TELEEXCHANGE_PASSWORD=prod_password" >> .config.env
-echo "MONITORING_API_KEY=prod_key" >> .config.env
+The application automatically connects to Cloud Foundry services:
 
-# Deploy (automatically sets CF environment variables)
-./deploy.sh
-```
+<table>
+<tr>
+<th width="30%">🏷️ Service</th>
+<th width="25%">📋 Binding Name</th>
+<th width="45%">🔧 What It Provides</th>
+</tr>
+<tr>
+<td><strong>🗂️ Service Registry</strong></td>
+<td><code>imc-services</code></td>
+<td>🔍 Service discovery and URL resolution<br>📡 Dynamic service endpoints</td>
+</tr>
+<tr>
+<td><strong>🐰 Message Queue</strong></td>
+<td><code>messaging-c856b29a-...</code></td>
+<td>🔐 RabbitMQ credentials and URLs<br>📊 Management API endpoints</td>
+</tr>
+</table>
 
-**Manual Environment Setup (if needed):**
-```bash
-cf set-env diagram-designer TELEEXCHANGE_USERNAME "prod_user"
-cf set-env diagram-designer TELEEXCHANGE_PASSWORD "prod_password"
-cf restart diagram-designer
+**📋 Manifest Configuration:**
+```yaml
+# diagram-designer-api/manifest.yml
+services:
+  - imc-services                    # 📡 Service Registry
+  - messaging-c856b29a-1c7e-4fd5    # 🐰 RabbitMQ
 ```
 
 ---
 
-## 🔐 Authentication System
+#### 🔐 **Advanced Environment Setup**
 
-### 🎯 **Generic Node-Based Authentication**
+<details>
+<summary><strong>🚀 Automatic (Recommended)</strong></summary>
 
-The diagram designer features a **completely generic authentication system** that automatically matches credentials to services using node names. This eliminates hardcoded service logic and makes it easy to add authentication for any service.
-
-### 🚀 **How It Works**
-
-1. **Frontend**: Passes node name with API requests
-2. **Backend**: Looks up credentials using node name priority system
-3. **Authentication**: Applies appropriate auth headers to external requests
-
-### 🔧 **Authentication Priority Order**
-
-The system tries to find credentials in this order:
-
-1. **🏷️ Node Name** (Highest Priority)
-   ```bash
-   TELEEXCHANGE_USERNAME=username
-   TELEEXCHANGE_PASSWORD=password
-   ```
-
-2. **🌐 Exact Host Match**
-   ```bash
-   RMQ_CF986537_69CC_4107_8B66_5542481DE9BA_SYS_TAS_NDC_KUHN_LABS_COM_USERNAME=username
-   ```
-
-3. **🔧 Service Prefix**
-   ```bash
-   RMQ_USERNAME=username  # From rmq-*.example.com
-   ```
-
-4. **🔄 Common Patterns**
-   ```bash
-   RABBITMQ_USERNAME=username  # Generic service match
-   ```
-
-### 💼 **Supported Authentication Methods**
-
-| Method | Environment Variables | Headers Applied |
-|--------|---------------------|-----------------|
-| **🔐 Basic Auth** | `NODENAME_USERNAME`<br>`NODENAME_PASSWORD` | `Authorization: Basic <base64>` |
-| **🎫 Bearer Token** | `NODENAME_BEARER_TOKEN` | `Authorization: Bearer <token>` |
-| **🗝️ API Key** | `NODENAME_API_KEY`<br>`NODENAME_API_HEADER` (optional) | `X-API-Key: <key>` (default)<br>or custom header |
-| **🏷️ Custom Header** | `NODENAME_CLIENT_ID`<br>`NODENAME_CLIENT_HEADER` (optional) | `X-Client-ID: <id>` (default)<br>or custom header |
-
-### 📝 **Configuration Examples**
-
-#### **🐰 RabbitMQ Service**
 ```bash
-# .config.env
-TELEEXCHANGE_USERNAME=9325d896-e0d4-4fb1-b2f2-17f13509e2fb
-TELEEXCHANGE_PASSWORD=mHbFqIgc2MoMetBauP5YHAHB
+# 📝 Add credentials to .config.env
+echo "MONITORING_API_KEY=sk_live_abc123" >> .config.env
+echo "GRAFANA_BEARER_TOKEN=eyJ0eXAi..." >> .config.env
+
+# 🚀 Deploy (automatically handles everything)
+./deploy.sh
 ```
 
-#### **📊 Monitoring API**
+**✨ What happens automatically:**
+- 🔍 Scans `.config.env` for authentication credentials
+- 🔐 Sets only security-related environment variables in CF
+- ☁️ Binds to configured services
+- 🔄 Restarts application with new configuration
+
+</details>
+
+<details>
+<summary><strong>🔧 Manual Service Management</strong></summary>
+
 ```bash
-# .config.env
-MONITORING_API_KEY=abc123xyz789
-MONITORING_API_HEADER=X-Monitoring-Key  # Optional custom header
+# 🔗 Bind additional services
+cf bind-service diagram-designer my-monitoring-service
+cf bind-service diagram-designer my-database-service
+
+# 🔐 Set additional environment variables
+cf set-env diagram-designer CUSTOM_API_KEY "secret_key"
+cf set-env diagram-designer MONITORING_TOKEN "monitor_token"
+
+# 🔄 Restart to apply changes
+cf restart diagram-designer
 ```
 
-#### **🛡️ Custom Service**
+</details>
+
+<details>
+<summary><strong>🔍 Service Discovery Verification</strong></summary>
+
 ```bash
-# .config.env
-MYSERVICE_BEARER_TOKEN=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+# 📋 Check bound services
+cf services | grep diagram-designer
+
+# 🔍 Verify service credentials
+cf env diagram-designer | grep -A 20 VCAP_SERVICES
+
+# 📊 Check application health
+cf app diagram-designer
 ```
 
-### 🔄 **Adding New Authenticated Services**
+</details>
 
-1. **📋 Identify Node Name**: Check your JSON configuration
-   ```json
-   {
-     "name": "myService",  // 👈 This becomes MYSERVICE_*
-     "displayName": "My Service",
-     // ...
-   }
-   ```
+---
 
-2. **🔧 Add Credentials**: Update `.config.env`
-   ```bash
-   MYSERVICE_USERNAME=my_username
-   MYSERVICE_PASSWORD=my_password
-   ```
+#### 🌟 **Deployment Benefits**
 
-3. **☁️ Deploy**: Credentials are automatically set in Cloud Foundry
-   ```bash
-   ./deploy.sh
-   ```
+<table>
+<tr>
+<td width="50%">
 
-4. **✅ Verify**: Service requests now include authentication headers
+**🔄 Automatic Service Discovery**
+- Services bound via `cf bind-service` are auto-discovered
+- No manual URL configuration needed
+- Platform-managed credential rotation
 
-### 🌟 **Benefits**
+**🔐 Enhanced Security**
+- Credentials never stored in code
+- Environment variable isolation
+- Audit trail for all changes
 
-- **🔄 Zero Code Changes**: Add new services without touching code
-- **🧹 Clean Architecture**: No hardcoded service-specific logic
-- **🔒 Secure**: All credentials handled server-side
-- **📈 Scalable**: Works with any number of services
-- **🎯 Flexible**: Supports multiple authentication methods
-- **🚀 Auto-Deploy**: Deploy script handles Cloud Foundry environment variables
+</td>
+<td width="50%">
+
+**🚀 Zero-Configuration Services**
+- RabbitMQ authentication automatic via service binding
+- Service registry provides dynamic URL resolution
+- Health checks and monitoring included
+
+**📊 Enterprise Features**
+- Multi-environment support
+- Rolling deployments
+- Automatic scaling capabilities
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🔐 Advanced Authentication System
+
+<div align="center">
+
+### 🚀 **Hybrid Authentication Architecture**
+
+**🎯 Node-Based Manual Auth + ☁️ Cloud Foundry Service Bindings**
+
+</div>
+
+---
+
+### 🌟 **Authentication Methods Overview**
+
+<table>
+<tr>
+<td width="50%" align="center">
+
+#### 🎯 **Manual Configuration**
+**Perfect for external APIs**
+
+```bash
+# .config.env
+NODENAME_USERNAME=user
+NODENAME_PASSWORD=pass
+NODENAME_API_KEY=key123
+```
+
+- 🔧 **Full Control**
+- 🔒 **Secure Environment Variables**
+- 🎨 **Custom Headers**
+- 📊 **External Services**
+
+</td>
+<td width="50%" align="center">
+
+#### ☁️ **Service Registry Integration**
+**Automatic with CF Service Bindings**
+
+```bash
+cf bind-service diagram-designer my-service
+```
+
+- 🚀 **Zero Configuration**
+- 🔄 **Automatic Discovery**
+- 📡 **Service Registry URLs**
+- 🛡️ **Platform Managed**
+
+</td>
+</tr>
+</table>
+
+---
+
+### 🎛️ **How The Hybrid System Works**
+
+<div align="center">
+
+```mermaid
+graph TD
+    A[🎯 Frontend Request] --> B{📝 Node Name}
+    B --> C[🔍 Backend Auth Resolver]
+
+    C --> D[🏷️ Priority 1: Node-Based Credentials]
+    C --> E[☁️ Priority 2: Service Bindings]
+    C --> F[🌐 Priority 3: Host Matching]
+
+    D --> G[✅ Authentication Applied]
+    E --> G
+    F --> G
+
+    G --> H[🌐 Secure API Request]
+
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#fff3e0
+    style D fill:#e8f5e8
+    style E fill:#e3f2fd
+    style F fill:#fce4ec
+    style G fill:#f1f8e9
+    style H fill:#e0f2f1
+```
+
+</div>
+
+---
+
+### 🔧 **Authentication Priority System**
+
+The system intelligently resolves credentials in this order:
+
+<table>
+<tr>
+<td width="15%" align="center"><strong>🥇<br>Priority 1</strong></td>
+<td width="25%"><strong>🎯 Node-Based Auth</strong></td>
+<td width="60%"><code>TELEEXCHANGE_USERNAME</code><br><code>TELEEXCHANGE_PASSWORD</code></td>
+</tr>
+<tr>
+<td align="center"><strong>🥈<br>Priority 2</strong></td>
+<td><strong>☁️ CF Service Bindings</strong></td>
+<td><code>VCAP_SERVICES</code> credentials automatically injected</td>
+</tr>
+<tr>
+<td align="center"><strong>🥉<br>Priority 3</strong></td>
+<td><strong>🌐 Host Pattern Matching</strong></td>
+<td><code>RMQ_USERNAME</code> (from rmq-*.example.com)</td>
+</tr>
+<tr>
+<td align="center"><strong>4️⃣<br>Priority 4</strong></td>
+<td><strong>🔄 Generic Service Patterns</strong></td>
+<td><code>RABBITMQ_USERNAME</code> (service type detection)</td>
+</tr>
+</table>
+
+---
+
+### 🛠️ **Supported Authentication Methods**
+
+<table>
+<tr>
+<th width="20%">🔐 Method</th>
+<th width="35%">🔧 Environment Variables</th>
+<th width="30%">📡 HTTP Headers</th>
+<th width="15%">💡 Use Case</th>
+</tr>
+<tr>
+<td><strong>🔑 Basic Auth</strong></td>
+<td><code>NODENAME_USERNAME</code><br><code>NODENAME_PASSWORD</code></td>
+<td><code>Authorization: Basic &lt;base64&gt;</code></td>
+<td>🐰 RabbitMQ<br>🗄️ Databases</td>
+</tr>
+<tr>
+<td><strong>🎫 Bearer Token</strong></td>
+<td><code>NODENAME_BEARER_TOKEN</code></td>
+<td><code>Authorization: Bearer &lt;token&gt;</code></td>
+<td>🔗 REST APIs<br>☁️ Cloud Services</td>
+</tr>
+<tr>
+<td><strong>🗝️ API Key</strong></td>
+<td><code>NODENAME_API_KEY</code><br><code>NODENAME_API_HEADER</code></td>
+<td><code>X-API-Key: &lt;key&gt;</code><br>or custom header</td>
+<td>📊 Analytics<br>🌤️ Weather APIs</td>
+</tr>
+<tr>
+<td><strong>🏷️ Custom Header</strong></td>
+<td><code>NODENAME_CLIENT_ID</code><br><code>NODENAME_CLIENT_HEADER</code></td>
+<td><code>X-Client-ID: &lt;id&gt;</code><br>or custom header</td>
+<td>🎛️ Custom APIs<br>🔧 Internal Services</td>
+</tr>
+</table>
+
+---
+
+### 📋 **Real-World Configuration Examples**
+
+<details>
+<summary><strong>🐰 RabbitMQ with Service Binding (Automatic)</strong></summary>
+
+```bash
+# Step 1: Bind RabbitMQ service
+cf bind-service diagram-designer messaging-service
+
+# Step 2: Deploy (credentials auto-injected from VCAP_SERVICES)
+./deploy.sh
+
+# ✅ Result: Automatic authentication for RabbitMQ management API
+```
+
+**📊 What happens:**
+- Service binding provides `username`, `password`, and `dashboard_url`
+- Authentication resolver automatically uses these credentials
+- No manual configuration required!
+
+</details>
+
+<details>
+<summary><strong>📊 External Monitoring API (Manual)</strong></summary>
+
+```bash
+# .config.env
+MONITORING_API_KEY=sk_live_abc123xyz789
+MONITORING_API_HEADER=X-Monitoring-Key
+
+# Deploy automatically sets CF environment variables
+./deploy.sh
+```
+
+**🎯 JSON Configuration:**
+```json
+{
+  "name": "monitoring",
+  "status": {
+    "url": "https://api.monitoring.com/health"
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>🛡️ Multi-Service Authentication</strong></summary>
+
+```bash
+# .config.env - Multiple services with different auth methods
+RABBITMQ_USERNAME=rabbit_user
+RABBITMQ_PASSWORD=rabbit_pass
+
+GRAFANA_BEARER_TOKEN=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+
+PROMETHEUS_API_KEY=prom_key_123
+PROMETHEUS_API_HEADER=X-Prometheus-Token
+
+CUSTOM_CLIENT_ID=client_abc
+CUSTOM_CLIENT_HEADER=X-Service-ID
+```
+
+**🎪 Result:** Each service gets its appropriate authentication automatically!
+
+</details>
+
+---
+
+### 🚀 **Quick Setup Guide**
+
+<div align="center">
+
+| Step | Action | Result |
+|------|--------|--------|
+| **1️⃣** | 📋 Identify your node name in JSON config | `"name": "myService"` |
+| **2️⃣** | 🔧 Add credentials to `.config.env` | `MYSERVICE_USERNAME=user` |
+| **3️⃣** | ☁️ Run deploy script | `./deploy.sh` |
+| **4️⃣** | ✅ Verify authentication works | Metrics display correctly |
+
+</div>
+
+---
+
+### 🌟 **Key Benefits**
+
+<table>
+<tr>
+<td width="33%" align="center">
+<h4>🔄 Zero Code Changes</h4>
+Add new authenticated services without touching any code
+</td>
+<td width="33%" align="center">
+<h4>🚀 Auto-Discovery</h4>
+CF service bindings provide URLs and credentials automatically
+</td>
+<td width="33%" align="center">
+<h4>🎯 Smart Priority</h4>
+Intelligent credential resolution with multiple fallbacks
+</td>
+</tr>
+<tr>
+<td align="center">
+<h4>🔒 Enterprise Security</h4>
+All credentials handled server-side with secure environment variables
+</td>
+<td align="center">
+<h4>📈 Unlimited Scale</h4>
+Support any number of services with any authentication method
+</td>
+<td align="center">
+<h4>🛠️ Developer Friendly</h4>
+Simple configuration with comprehensive documentation
+</td>
+</tr>
+</table>
+
+---
+
+### 🔍 **Advanced Features**
+
+#### 🎛️ **Service Registry Integration**
+- **🔍 Automatic Discovery**: Services bound via `cf bind-service` are automatically discovered
+- **📡 URL Resolution**: Service registry provides actual service URLs and endpoints
+- **🔄 Dynamic Updates**: Service information updates automatically without redeploy
+- **🛡️ Security**: Platform-managed credentials with automatic rotation support
+
+#### 🔐 **Enhanced Security**
+- **🚫 No Client Secrets**: Zero credentials exposed to frontend
+- **🔒 Environment Isolation**: Development vs production credential separation
+- **📊 Audit Trail**: All authentication attempts logged for security monitoring
+- **🛡️ Secure Headers**: Automatic security header injection for all requests
 
 ---
 
