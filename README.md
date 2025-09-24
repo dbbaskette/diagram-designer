@@ -16,7 +16,7 @@
 
 *Create stunning, interactive system diagrams with real-time metrics, animated particles, and enterprise-grade authentication*
 
-**✨ NEW: Hybrid Authentication System with Cloud Foundry Service Registry Integration!**
+**✨ NEW: Interactive Detail Modals + Hybrid Authentication System!**
 
 [🌐 Live Demo](#-deployment) | [🔐 Authentication Guide](#-advanced-authentication-system) | [📖 Documentation](#-configuration-guide) | [🚀 Quick Start](#-quick-start)
 
@@ -49,6 +49,7 @@
 - 🔧 **JSON Configuration Editor**
 - 📍 **Live Coordinate Display**
 - 🌐 **Clickable Components**
+- 🎯 **Interactive Detail Modals**
 - ☁️ **Cloud Foundry Ready**
 
 </td>
@@ -367,6 +368,384 @@ cp .config.env.template .config.env
   ]
 }
 ```
+
+---
+
+## 🎯 Interactive Detail Modals
+
+### 🚀 **NEW: Clickable Node Detail System**
+
+Transform your static diagrams into interactive documentation with rich, customizable detail modals that appear when users click on nodes.
+
+<div align="center">
+
+**📋 Features Overview**
+
+| Feature | Description | Configuration |
+|---------|-------------|---------------|
+| **🎯 Multiple Click Behaviors** | Modal, direct URL, or hybrid modes | `clickBehavior: "modal"` |
+| **📊 Rich Content Sections** | Info, metrics, status, logs, custom HTML | JSON-based templates |
+| **🔗 Quick Action Links** | Primary, secondary, and external links | Styled button links |
+| **🖼️ Custom Pages** | Embedded iframes, HTML, or markdown | Full-screen custom content |
+| **📱 Responsive Design** | Mobile-friendly modal layout | Portal-based rendering |
+
+</div>
+
+---
+
+### 🎛️ **Click Behavior Configuration**
+
+Control how users interact with your diagram nodes:
+
+```json
+{
+  "name": "myService",
+  "clickBehavior": "modal",    // Options: "modal" | "url" | "both"
+  "url": "https://dashboard.example.com/myservice"
+}
+```
+
+<table>
+<tr>
+<th width="25%">🎯 Behavior</th>
+<th width="35%">🖱️ User Action</th>
+<th width="40%">💡 Use Case</th>
+</tr>
+<tr>
+<td><strong>🎯 modal</strong> (default)</td>
+<td>Click opens detail modal</td>
+<td>Comprehensive service documentation</td>
+</tr>
+<tr>
+<td><strong>🔗 url</strong></td>
+<td>Click opens external URL</td>
+<td>Direct dashboard access</td>
+</tr>
+<tr>
+<td><strong>🎪 both</strong></td>
+<td>Click = modal<br>Ctrl+Click = URL</td>
+<td>Best of both worlds</td>
+</tr>
+</table>
+
+---
+
+### 📋 **Detail Configuration Structure**
+
+Create rich service documentation by adding detail configuration files:
+
+#### **📁 File Location**
+```bash
+configs/details/{NodeName}.json
+```
+
+#### **🏗️ Basic Structure**
+```json
+{
+  "title": "Service Display Name",
+  "description": "Brief service description",
+  "sections": [
+    {
+      "title": "📊 Live Metrics",
+      "type": "metrics",
+      "icon": "📊",
+      "content": "<div>Custom HTML content...</div>"
+    },
+    {
+      "title": "🔧 Configuration",
+      "type": "info",
+      "icon": "⚙️",
+      "content": "<div>Service configuration details...</div>"
+    }
+  ],
+  "links": [
+    {
+      "label": "🖥️ Dashboard",
+      "url": "https://dashboard.example.com",
+      "type": "primary"
+    }
+  ]
+}
+```
+
+---
+
+### 🎨 **Content Section Types**
+
+<table>
+<tr>
+<th width="15%">🏷️ Type</th>
+<th width="25%">🎯 Purpose</th>
+<th width="35%">💡 Example Usage</th>
+<th width="25%">🎨 Styling</th>
+</tr>
+<tr>
+<td><strong>📊 metrics</strong></td>
+<td>Live performance data</td>
+<td>CPU, memory, throughput stats</td>
+<td>Grid layouts, progress bars</td>
+</tr>
+<tr>
+<td><strong>ℹ️ info</strong></td>
+<td>Static configuration data</td>
+<td>Version, settings, properties</td>
+<td>Key-value pairs, tables</td>
+</tr>
+<tr>
+<td><strong>🔄 status</strong></td>
+<td>Current operational state</td>
+<td>Health checks, connection status</td>
+<td>Status indicators, badges</td>
+</tr>
+<tr>
+<td><strong>📝 logs</strong></td>
+<td>Recent activity logs</td>
+<td>Error logs, audit trails</td>
+<td>Console-style formatting</td>
+</tr>
+<tr>
+<td><strong>🎯 custom</strong></td>
+<td>Any custom HTML content</td>
+<td>Charts, embedded widgets</td>
+<td>Full Tailwind CSS support</td>
+</tr>
+</table>
+
+---
+
+### 🔗 **Quick Action Links**
+
+Add convenient action buttons to your modals:
+
+```json
+{
+  "links": [
+    {
+      "label": "🖥️ Main Dashboard",
+      "url": "https://dashboard.example.com",
+      "icon": "🖥️",
+      "type": "primary"       // Blue primary button
+    },
+    {
+      "label": "📊 Metrics View",
+      "url": "https://metrics.example.com",
+      "icon": "📊",
+      "type": "secondary"     // Gray secondary button
+    },
+    {
+      "label": "📋 Documentation",
+      "url": "https://docs.example.com",
+      "icon": "📋",
+      "type": "external"      // Green external link
+    }
+  ]
+}
+```
+
+**🎨 Link Types:**
+- **🔵 primary**: Main action (blue, prominent)
+- **⚫ secondary**: Additional actions (gray)
+- **🟢 external**: External resources (green)
+
+---
+
+### 🖼️ **Custom Page Embeds**
+
+Embed full external content directly in modals:
+
+```json
+{
+  "customPage": {
+    "type": "iframe",
+    "content": "https://dashboard.example.com/embed"
+  }
+}
+```
+
+**📋 Custom Page Types:**
+- **🖼️ iframe**: Embed external dashboards or web apps
+- **📄 html**: Direct HTML content injection
+- **📝 markdown**: Markdown content (with parser)
+
+---
+
+### 🎯 **Pre-Built Templates**
+
+Get started quickly with our comprehensive templates:
+
+<details>
+<summary><strong>📊 Database Service Template (JDBCSink.json)</strong></summary>
+
+Features connection pool metrics, transaction logs, performance dashboards, and status monitoring.
+
+```json
+{
+  "title": "JDBC Database Sink",
+  "sections": [
+    {
+      "title": "📊 Connection Pool Metrics",
+      "type": "metrics",
+      "content": "Active connections, throughput, latency metrics..."
+    },
+    {
+      "title": "🔍 Recent Transaction Log",
+      "type": "logs",
+      "content": "Console-style transaction history..."
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
+<summary><strong>📈 Analytics Service Template (EventsProcessor.json)</strong></summary>
+
+Processing metrics, event flow status, rules configuration, and activity logs.
+
+```json
+{
+  "title": "Vehicle Events Processor",
+  "sections": [
+    {
+      "title": "⚡ Processing Metrics",
+      "type": "metrics",
+      "content": "Events/sec, processing time, queue depths..."
+    },
+    {
+      "title": "🔄 Event Flow Status",
+      "type": "status",
+      "content": "Stream status indicators and health checks..."
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
+<summary><strong>🗄️ Data Warehouse Template (GreenplumWarehouse.json)</strong></summary>
+
+Simple template for data warehouse services with cluster statistics and configuration details.
+
+```json
+{
+  "title": "Greenplum Data Warehouse",
+  "sections": [
+    {
+      "title": "📊 Cluster Statistics",
+      "type": "metrics",
+      "content": "Segment count, data size, query rates..."
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
+<summary><strong>🔧 Developer Template (TEMPLATE.json)</strong></summary>
+
+Complete template with all section types, comprehensive documentation, and examples.
+
+- ✅ All section types demonstrated
+- 📖 Inline documentation and comments
+- 🎨 Styling examples with Tailwind CSS
+- 🔧 Ready to copy and customize
+
+</details>
+
+---
+
+### 🚀 **Quick Setup Guide**
+
+<div align="center">
+
+| Step | Action | File/Command |
+|------|--------|--------------|
+| **1️⃣** | 🗃️ Create detail config | `configs/details/MyService.json` |
+| **2️⃣** | 🎯 Set click behavior | `"clickBehavior": "modal"` in main config |
+| **3️⃣** | 🎨 Design content sections | Use templates as starting point |
+| **4️⃣** | 🚀 Deploy and test | `./deploy.sh` |
+
+</div>
+
+#### 🎯 **Example Workflow**
+
+```bash
+# 1. Copy template for your service
+cp configs/details/TEMPLATE.json configs/details/MyDatabaseService.json
+
+# 2. Edit your service configuration
+# Add: "clickBehavior": "modal" to your main diagram config
+
+# 3. Customize the detail template
+# - Update title, description, sections
+# - Add your service-specific metrics
+# - Include relevant dashboard links
+
+# 4. Deploy
+./deploy.sh
+
+# 5. Test by clicking your node - modal appears! 🎉
+```
+
+---
+
+### 💡 **Pro Tips**
+
+<table>
+<tr>
+<td width="50%">
+
+**🎨 Content Styling**
+- Use Tailwind CSS classes for consistent styling
+- Color-code sections: blue for metrics, green for status
+- Include icons in section titles for visual appeal
+- Use grid layouts for metric displays
+
+**🔄 Dynamic Content**
+- Metrics refresh automatically every 30 seconds
+- Status indicators show real-time health
+- Log sections can show recent activity
+- Custom sections support any HTML content
+
+</td>
+<td width="50%">
+
+**📱 User Experience**
+- Modals render using React Portal for proper layering
+- Click outside modal to close
+- Responsive design works on mobile devices
+- Keyboard shortcuts: Escape to close
+
+**🔧 Development**
+- Hot reload during development shows config changes
+- JSON validation prevents invalid configurations
+- Console logging helps debug content issues
+- Template comments explain each section type
+
+</td>
+</tr>
+</table>
+
+---
+
+### 🌟 **Benefits**
+
+<div align="center">
+
+| 📊 **Rich Documentation** | 🚀 **Zero Code Changes** | 🎯 **User Friendly** |
+|---------------------------|--------------------------|----------------------|
+| Transform static diagrams | Add detailed views without | Intuitive click interactions |
+| into interactive docs | touching application code | with professional modals |
+
+| 🔧 **Highly Customizable** | 📱 **Production Ready** | 🎨 **Beautiful Design** |
+|----------------------------|-------------------------|----------------------|
+| JSON-based configuration | Portal rendering, responsive | Tailwind CSS styling, |
+| supports any content type | design, enterprise security | consistent visual theme |
+
+</div>
 
 ---
 

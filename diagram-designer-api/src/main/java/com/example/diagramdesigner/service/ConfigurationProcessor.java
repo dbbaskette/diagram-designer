@@ -18,14 +18,16 @@ import java.util.regex.Pattern;
 public class ConfigurationProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigurationProcessor.class);
-    private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([A-Z_][A-Z0-9_]*)(:([^}]*))?\\}");
+    private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([A-Z_][A-Z0-9_-]*)(:([^}]*))?\\}");
 
     private final Environment environment;
     private final ObjectMapper objectMapper;
+    private final ServiceDiscovery serviceDiscovery;
 
-    public ConfigurationProcessor(Environment environment, ObjectMapper objectMapper) {
+    public ConfigurationProcessor(Environment environment, ObjectMapper objectMapper, ServiceDiscovery serviceDiscovery) {
         this.environment = environment;
         this.objectMapper = objectMapper;
+        this.serviceDiscovery = serviceDiscovery;
     }
 
     /**
@@ -90,8 +92,10 @@ public class ConfigurationProcessor {
     }
 
     /**
-     * Substitute environment variables in a string
-     * Supports formats: ${VAR_NAME} and ${VAR_NAME:default_value}
+     * Substitute environment variables and service URLs in a string
+     * Supports formats:
+     * - ${VAR_NAME} and ${VAR_NAME:default_value} for environment variables
+     * - ${SERVICE-NAME} for service discovery (e.g., ${IMC-HDFS-SINK})
      */
     private String substituteVariables(String input) {
         if (input == null || !input.contains("${")) {
@@ -105,8 +109,19 @@ public class ConfigurationProcessor {
             String variableName = matcher.group(1);
             String defaultValue = matcher.group(3); // Can be null
 
-            // Get the value from environment
-            String value = environment.getProperty(variableName, defaultValue);
+            String value = null;
+
+            // Check if this looks like a service name (contains hyphens)
+            if (variableName.contains("-") && variableName.startsWith("IMC-")) {
+                // Try service discovery first
+                value = serviceDiscovery.discoverServiceUrl(variableName);
+                logger.debug("Service discovery for {} returned: {}", variableName, value);
+            }
+
+            // Fall back to environment variable if service discovery didn't work
+            if (value == null) {
+                value = environment.getProperty(variableName, defaultValue);
+            }
 
             if (value != null) {
                 // Replace the entire pattern with the resolved value

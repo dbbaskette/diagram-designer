@@ -26,6 +26,7 @@ export interface DiagramNode {
   position?: { x: number; y: number };
   circleColor?: string; // Color of the node circle border and glow
   url?: string; // URL to open when component is clicked
+  clickBehavior?: 'modal' | 'url' | 'both'; // How clicking the node should behave
   status?: {
     url: string;
     valueField: string;

@@ -29,6 +29,4 @@ applications:
       # API_CLIENT_ID: will be set via cf set-env
 
     services:
-      # Add your service bindings here if needed
-      # - my-database-service
-      # - my-redis-service
+      - imc-services

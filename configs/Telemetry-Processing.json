@@ -2,7 +2,7 @@
   "config": {
     "layout": "horizontal",
     "updateInterval": 30000,
-    "title": "Telemetry Processing",
+    "title": "Insurance Megacorp Demo",
     "nodeGlow": {
       "enabled": true,
       "intensity": 8,
@@ -23,21 +23,24 @@
       "url": "https://imc-telematics-gen.apps.tas-ndc.kuhn-labs.com/",
       "status": {
         "url": "https://imc-telematics-gen.apps.tas-ndc.kuhn-labs.com/actuator/health",
-                "valueField": "status",
+        "key": "health-check-token-123",
+        "valueField": "status",
         "upValue": "UP",
         "downValue": "DOWN",
         "updateInterval": 10000
       },
       "dataGrid": [
         {
-          "label": "Traffic",
-                    "url": "https://monitoring.example.com/api/v1/webtraffic",
-          "valueField": "requestsPerSecond"
+          "label": "Total Messages Sent",
+          "key": "xyz-apikey-for-webserver",
+          "url": "https://imc-telematics-gen.apps.tas-ndc.kuhn-labs.com/actuator/metrics/telematics.messages.sent",
+          "valueField": "measurements[0].value"
         },
         {
-          "label": "CPU Utilization",
-                    "url": "https://metrics.example.com/api/v1/metrics",
-          "valueField": "cpuUtilization"
+          "label": "Message/Second",
+          "key": "bearer-token-secret-123",
+          "url": "https://imc-telematics-gen.apps.tas-ndc.kuhn-labs.com/actuator/metrics/telematics.messages.rate",
+          "valueField": "measurements[0].value"
         }
       ],
       "connectTo": [],
@@ -68,26 +71,24 @@
       },
       "circleColor": "#76D72A",
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
+      "clickBehavior": "both",
       "status": {
-        "url": "https://rabbitmq.example.com/api/overview",
-        "key": "rabbitmq-admin-token-456",
-        "valueField": "node",
-        "upValue": "running",
-        "downValue": "stopped",
+        "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/overview",
+        "valueField": "rabbitmq_version",
+        "upValue": "4.0.12",
+        "downValue": "down",
         "updateInterval": 15000
       },
       "dataGrid": [
         {
-          "label": "Transactions",
-          "key": "abc-apikey-for-apiserver",
-          "url": "https://api.example.com/api/v2/transactions/count",
-          "valueField": "totalTransactions"
+          "label": "Messages IN (msgs/sec)",
+          "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/exchanges/cf986537-69cc-4107-8b66-5542481de9ba/telematics_exchange",
+          "valueField": "message_stats.publish_in_details.rate"
         },
         {
-          "label": "Latency",
-          "key": "session-key-secret-456",
-          "url": "https://api.example.com/api/v2/performance",
-          "valueField": "averageLatencyMs"
+          "label": "Messages OUT (msgs/sec)",
+          "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/exchanges/cf986537-69cc-4107-8b66-5542481de9ba/telematics_exchange",
+          "valueField": "message_stats.publish_out_details.rate"
         }
       ],
       "connectTo": [
@@ -123,26 +124,24 @@
         "y": 9.450242718446574
       },
       "circleColor": "#e74c3c",
+      "url": "${IMC-HDFS-SINK}",
       "status": {
-        "url": "https://datalake.example.com/api/health",
-        "key": "datalake-access-key-789",
-        "valueField": "cluster_status",
-        "upValue": "active",
-        "downValue": "inactive",
-        "updateInterval": 20000
+        "url": "${IMC-HDFS-SINK}/actuator/health",
+        "valueField": "status",
+        "upValue": "UP",
+        "downValue": "DOWN",
+        "updateInterval": 15000
       },
       "dataGrid": [
         {
-          "label": "Active Connections",
-          "key": "dbUser:admin_user",
-          "url": "https://db.example.com/db/status/connections",
-          "valueField": "activeConnections"
+          "label": "Messages IN (count)",
+          "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/queues/cf986537-69cc-4107-8b66-5542481de9ba/telematics_exchange.hdfs-sink-group",
+          "valueField": "message_stats.deliver_get"
         },
         {
-          "label": "Storage Size (GB)",
-          "key": "dbPass:super-secret-password-789",
-          "url": "https://db.example.com/db/status/storage",
-          "valueField": "diskSizeGb"
+          "label": "Message Rate OUT (msgs/sec)",
+          "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/queues/cf986537-69cc-4107-8b66-5542481de9ba/telematics_exchange.hdfs-sink-group",
+          "valueField": "message_stats.ack_details.rate"
         }
       ],
       "connectTo": [
@@ -233,26 +232,25 @@
         "y": 9.450242718446574
       },
       "circleColor": "#e74c3c",
+      "url": "http://big-data-005.kuhn-labs.com:9870/",
       "status": {
-        "url": "https://datalake.example.com/api/health",
-        "key": "datalake-access-key-789",
-        "valueField": "cluster_status",
+        "url": "http://big-data-005.kuhn-labs.com:9870/jmx?qry=Hadoop:service=NameNode,name=NameNodeStatus",
+        "valueField": "beans[0].State",
         "upValue": "active",
-        "downValue": "inactive",
+        "downValue": "standby",
         "updateInterval": 20000
       },
       "dataGrid": [
         {
-          "label": "Active Connections",
-          "key": "dbUser:admin_user",
-          "url": "https://db.example.com/db/status/connections",
-          "valueField": "activeConnections"
+          "label": "User Capacity (GB)",
+          "url": "http://big-data-005.kuhn-labs.com:9870/jmx?qry=Hadoop:service=NameNode,name=FSNamesystemState",
+          "valueField": "beans[0].CapacityUsed",
+          "transform": "divide_1073741824"
         },
         {
-          "label": "Storage Size (GB)",
-          "key": "dbPass:super-secret-password-789",
-          "url": "https://db.example.com/db/status/storage",
-          "valueField": "diskSizeGb"
+          "label": "# Files",
+          "url": "http://big-data-005.kuhn-labs.com:9870/jmx?qry=Hadoop:service=NameNode,name=FSNamesystemState",
+          "valueField": "beans[0].FilesTotal"
         }
       ],
       "connectTo": [
@@ -290,25 +288,22 @@
       "circleColor": "#76D72A",
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
-        "url": "https://rabbitmq.example.com/api/overview",
-        "key": "rabbitmq-admin-token-456",
-        "valueField": "node",
-        "upValue": "running",
-        "downValue": "stopped",
+        "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/overview",
+        "valueField": "rabbitmq_version",
+        "upValue": "4.0.12",
+        "downValue": "down",
         "updateInterval": 15000
       },
       "dataGrid": [
         {
-          "label": "Transactions",
-          "key": "abc-apikey-for-apiserver",
-          "url": "https://api.example.com/api/v2/transactions/count",
-          "valueField": "totalTransactions"
+          "label": "Messages IN (msgs/sec)",
+          "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/exchanges/cf986537-69cc-4107-8b66-5542481de9ba/vehicle_events",
+          "valueField": "message_stats.publish_in_details.rate"
         },
         {
-          "label": "Latency",
-          "key": "session-key-secret-456",
-          "url": "https://api.example.com/api/v2/performance",
-          "valueField": "averageLatencyMs"
+          "label": "Messages OUT (msgs/sec)",
+          "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/exchanges/cf986537-69cc-4107-8b66-5542481de9ba/vehicle_events",
+          "valueField": "message_stats.publish_out_details.rate"
         }
       ],
       "connectTo": [
@@ -347,7 +342,6 @@
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
         "url": "https://rabbitmq.example.com/api/overview",
-        "key": "rabbitmq-admin-token-456",
         "valueField": "node",
         "upValue": "running",
         "downValue": "stopped",
@@ -403,7 +397,6 @@
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
         "url": "https://rabbitmq.example.com/api/overview",
-        "key": "rabbitmq-admin-token-456",
         "valueField": "node",
         "upValue": "running",
         "downValue": "stopped",
@@ -459,7 +452,6 @@
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
         "url": "https://rabbitmq.example.com/api/overview",
-        "key": "rabbitmq-admin-token-456",
         "valueField": "node",
         "upValue": "running",
         "downValue": "stopped",

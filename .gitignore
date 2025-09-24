@@ -49,3 +49,6 @@ temp/*.yml
 
 # Actual diagram configuration (contains sensitive data)
 frontend/public/diagram-config.json
+configs/Telemetry-Processing.json
+configs/IMC-chatbot.json
+diagram-designer-api/target

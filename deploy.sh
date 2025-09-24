@@ -92,7 +92,7 @@ if [ -f ".config.env" ]; then
             value="${BASH_REMATCH[2]}"
 
             # Only set authentication-related variables for security
-            if [[ "$key" =~ ^(RABBITMQ|RMQ|MONITORING|API|DB|POSTGRES|MYSQL)_(USERNAME|PASSWORD|API_KEY|BEARER_TOKEN|CLIENT_ID|SECRET)$ ]]; then
+            if [[ "$key" =~ (USERNAME|PASSWORD|API_KEY|BEARER_TOKEN|CLIENT_ID|SECRET|TOKEN)$ ]]; then
                 echo "   Setting $key"
                 cf set-env diagram-designer "$key" "$value" > /dev/null 2>&1
             fi

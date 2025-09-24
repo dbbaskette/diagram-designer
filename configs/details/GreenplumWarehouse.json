@@ -1,0 +1,32 @@
+{
+  "title": "Greenplum Data Warehouse",
+  "description": "Massively parallel processing (MPP) data warehouse for analytics and reporting",
+  "sections": [
+    {
+      "title": "📊 Cluster Statistics",
+      "type": "metrics",
+      "icon": "📊",
+      "content": "<div class=\"grid grid-cols-3 gap-4\"><div class=\"bg-blue-50 p-3 rounded border-l-4 border-blue-500\"><div class=\"text-blue-600 font-semibold\">Active Segments</div><div class=\"text-2xl font-bold\">16</div></div><div class=\"bg-green-50 p-3 rounded border-l-4 border-green-500\"><div class=\"text-green-600 font-semibold\">Data Size</div><div class=\"text-2xl font-bold\">2.4TB</div></div><div class=\"bg-purple-50 p-3 rounded border-l-4 border-purple-500\"><div class=\"text-purple-600 font-semibold\">Query/min</div><div class=\"text-2xl font-bold\">847</div></div></div>"
+    },
+    {
+      "title": "🔧 Configuration",
+      "type": "info",
+      "icon": "⚙️",
+      "content": "<div class=\"space-y-2\"><div><strong>Master Host:</strong> gpmaster.example.com</div><div><strong>Segments:</strong> 16 primary + 16 mirror</div><div><strong>Database:</strong> warehouse_db</div><div><strong>Version:</strong> Greenplum 7.0</div></div>"
+    }
+  ],
+  "links": [
+    {
+      "label": "🖥️ Greenplum Command Center",
+      "url": "https://gpmaster.example.com:28080/",
+      "icon": "🖥️",
+      "type": "primary"
+    },
+    {
+      "label": "📊 Performance Monitor",
+      "url": "https://monitoring.example.com/greenplum",
+      "icon": "📈",
+      "type": "secondary"
+    }
+  ]
+}

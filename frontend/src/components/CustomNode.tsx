@@ -3,6 +3,8 @@ import { Handle, Position } from 'reactflow';
 import type { NodeProps } from 'reactflow';
 import type { NodeData, DataGridItem } from '../types/diagram';
 import { buildMetricsUrl, log, appConfig } from '../config/appConfig';
+import NodeDetailModal, { type NodeDetailConfig } from './NodeDetailModal';
+import { nodeDetailsService } from '../services/nodeDetailsService';
 
 // Utility function to get nested object values by path (e.g., "measurements[0].value")
 const getNestedValue = (obj: any, path: string): any => {
@@ -90,6 +92,11 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
   const [status, setStatus] = useState<'up' | 'down' | 'unknown'>('unknown');
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+
+  // Modal state for detailed view
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [nodeDetails, setNodeDetails] = useState<NodeDetailConfig | undefined>(undefined);
+  const [detailsLoading, setDetailsLoading] = useState(false);
   
   // Status checking function
   const checkStatus = async () => {
@@ -174,7 +181,50 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
       return () => clearInterval(interval);
     }
   }, [data.status]);
-  
+
+  // Modal functionality
+  const handleNodeClick = async (event: React.MouseEvent) => {
+    // Check if click behavior is specified in config
+    const clickBehavior = data.clickBehavior || 'modal'; // Default to modal
+
+    if (clickBehavior === 'url' && data.url) {
+      // Direct URL navigation
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    if (clickBehavior === 'both') {
+      // Check for modifier keys - Ctrl/Cmd + click = URL, regular click = modal
+      if ((event.ctrlKey || event.metaKey) && data.url) {
+        window.open(data.url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+    }
+
+    // Default behavior or modal mode - open details modal
+    await openDetailsModal();
+  };
+
+  const openDetailsModal = async () => {
+    setIsModalOpen(true);
+
+    if (!nodeDetails && !detailsLoading) {
+      setDetailsLoading(true);
+      try {
+        const details = await nodeDetailsService.loadNodeDetails(data.name);
+        setNodeDetails(details || undefined);
+      } catch (error) {
+        log.error(`Failed to load details for ${data.name}:`, error);
+      } finally {
+        setDetailsLoading(false);
+      }
+    }
+  };
+
+  const closeDetailsModal = () => {
+    setIsModalOpen(false);
+  };
+
   // Generate input handles
   const inputHandleElements = [];
   console.log(`Creating ${inputHandles} input handles for ${data.name}`);
@@ -255,11 +305,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
             ? `drop-shadow(0 0 ${data.config.nodeGlow.spread}px ${data.circleColor || '#22c55e'})` 
             : undefined
         }}
-        onClick={() => {
-          if (data.url) {
-            window.open(data.url, '_blank', 'noopener,noreferrer');
-          }
-        }}
+        onClick={handleNodeClick}
         title={data.url ? `Click to open: ${data.url}` : undefined}
       >
         {/* Node Icon - Only icon inside circle */}
@@ -312,6 +358,14 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
           {Math.round(xPos || 0)}, {Math.round(yPos || 0)}
         </div>
       )}
+
+      {/* Node Detail Modal */}
+      <NodeDetailModal
+        isOpen={isModalOpen}
+        onClose={closeDetailsModal}
+        nodeData={data}
+        nodeDetails={nodeDetails}
+      />
     </>
   );
 };
