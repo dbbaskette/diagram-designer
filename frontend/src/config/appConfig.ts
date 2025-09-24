@@ -11,10 +11,14 @@ export interface AppConfig {
 }
 
 export const loadConfig = (): AppConfig => {
+  // Determine if we're in development or production
+  const isDevelopment = import.meta.env.DEV || import.meta.env.NODE_ENV === 'development';
+
   // Default configuration
   const defaultConfig: AppConfig = {
     api: {
-      baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3001',
+      // Use localhost for development, relative URLs for production (Cloud Foundry)
+      baseUrl: import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:3001' : ''),
       metricsEndpoint: '/api/metrics',
       healthEndpoint: '/api/health',
     },
@@ -39,9 +43,10 @@ export const buildApiUrl = (endpoint: string): string => {
 };
 
 // Helper function for metrics proxy
-export const buildMetricsUrl = (targetUrl: string): string => {
+export const buildMetricsUrl = (targetUrl: string, nodeName?: string): string => {
   const encodedUrl = encodeURIComponent(targetUrl);
-  return buildApiUrl(`${appConfig.api.metricsEndpoint}?url=${encodedUrl}`);
+  const nodeParam = nodeName ? `&node=${encodeURIComponent(nodeName)}` : '';
+  return buildApiUrl(`${appConfig.api.metricsEndpoint}?url=${encodedUrl}${nodeParam}`);
 };
 
 // Logging helper that respects log level

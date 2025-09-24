@@ -35,8 +35,10 @@ public class MetricsProxyController {
     }
 
     @GetMapping("/metrics")
-    public Mono<ResponseEntity<Object>> proxyMetrics(@RequestParam("url") String targetUrl) {
-        logger.info("Received metrics proxy request for URL: {}", targetUrl);
+    public Mono<ResponseEntity<Object>> proxyMetrics(
+            @RequestParam("url") String targetUrl,
+            @RequestParam(value = "node", required = false) String nodeName) {
+        logger.info("Received metrics proxy request for URL: {} (node: {})", targetUrl, nodeName);
 
         if (!StringUtils.hasText(targetUrl)) {
             return Mono.just(ResponseEntity.badRequest()
@@ -49,7 +51,7 @@ public class MetricsProxyController {
                     .body(Map.of("error", "Invalid URL format")));
         }
 
-        return metricsProxyService.proxyRequest(targetUrl);
+        return metricsProxyService.proxyRequest(targetUrl, nodeName);
     }
 
     @GetMapping("/list-diagrams")

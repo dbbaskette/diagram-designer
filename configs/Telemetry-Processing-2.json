@@ -73,7 +73,6 @@
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
         "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/overview",
-        "key": "rabbitmq-admin-token-456",
         "valueField": "rabbitmq_version",
         "upValue": "4.0.12",
         "downValue": "down",
@@ -83,14 +82,12 @@
         {
           "label": "Messages IN (msgs/sec)",
           "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/exchanges/cf986537-69cc-4107-8b66-5542481de9ba/telematics_exchange",
-          "valueField": "message_stats.publish_in_details.rate",
-          "useProxy": false
+          "valueField": "message_stats.publish_in_details.rate"
         },
         {
           "label": "Messages OUT (msgs/sec)",
           "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/exchanges/cf986537-69cc-4107-8b66-5542481de9ba/telematics_exchange",
-          "valueField": "message_stats.publish_out_details.rate",
-          "useProxy": false
+          "valueField": "message_stats.publish_out_details.rate"
         }
       ],
       "connectTo": [
@@ -294,7 +291,6 @@
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
         "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/overview",
-        "key": "rabbitmq-admin-token-456",
         "valueField": "rabbitmq_version",
         "upValue": "4.0.12",
         "downValue": "down",
@@ -304,14 +300,12 @@
         {
           "label": "Messages IN (msgs/sec)",
           "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/exchanges/cf986537-69cc-4107-8b66-5542481de9ba/vehicle_events",
-          "valueField": "message_stats.publish_in_details.rate",
-          "useProxy": false
+          "valueField": "message_stats.publish_in_details.rate"
         },
         {
           "label": "Messages OUT (msgs/sec)",
           "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/api/exchanges/cf986537-69cc-4107-8b66-5542481de9ba/vehicle_events",
-          "valueField": "message_stats.publish_out_details.rate",
-          "useProxy": false
+          "valueField": "message_stats.publish_out_details.rate"
         }
       ],
       "connectTo": [
@@ -350,7 +344,6 @@
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
         "url": "https://rabbitmq.example.com/api/overview",
-        "key": "rabbitmq-admin-token-456",
         "valueField": "node",
         "upValue": "running",
         "downValue": "stopped",
@@ -406,7 +399,6 @@
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
         "url": "https://rabbitmq.example.com/api/overview",
-        "key": "rabbitmq-admin-token-456",
         "valueField": "node",
         "upValue": "running",
         "downValue": "stopped",
@@ -462,7 +454,6 @@
       "url": "https://rmq-cf986537-69cc-4107-8b66-5542481de9ba.sys.tas-ndc.kuhn-labs.com/",
       "status": {
         "url": "https://rabbitmq.example.com/api/overview",
-        "key": "rabbitmq-admin-token-456",
         "valueField": "node",
         "upValue": "running",
         "downValue": "stopped",

@@ -87,6 +87,8 @@ This application uses a **hybrid Spring Boot + React architecture** for maximum 
 
 ### 🔒 **Security Features**
 - **No Client-side Secrets**: All credentials handled server-side
+- **Node-Based Authentication**: Generic credentials using node names
+- **Multiple Auth Methods**: Basic, Bearer, API Key, and custom headers
 - **Dynamic Authentication**: Automatic credential matching by hostname
 - **Variable Substitution**: Secure runtime replacement of `${VARIABLES}`
 - **CORS Protection**: Configurable cross-origin policies
@@ -129,7 +131,7 @@ cd diagram-designer
 
 # 🔧 Set up configuration
 cp .config.env.template .config.env
-# Edit .config.env with your service credentials
+# Edit .config.env with your service credentials (node-based authentication)
 
 # 🎯 Start local development (Spring Boot + React)
 ./deploy-local.sh
@@ -461,13 +463,128 @@ echo "MYSERVICE_API_KEY=abc123" >> .config.env
 - `deploy.sh` - Automated deployment script
 
 **🔐 Environment Setup:**
+
+The deployment script automatically sets environment variables from `.config.env`:
+
 ```bash
-# Set production credentials in Cloud Foundry
-cf set-env diagram-designer RABBITMQ_USERNAME "prod_user"
-cf set-env diagram-designer RABBITMQ_PASSWORD "prod_password"
-cf set-env diagram-designer MONITORING_API_KEY "prod_key"
-cf restage diagram-designer
+# Add credentials to .config.env
+echo "TELEEXCHANGE_USERNAME=prod_user" >> .config.env
+echo "TELEEXCHANGE_PASSWORD=prod_password" >> .config.env
+echo "MONITORING_API_KEY=prod_key" >> .config.env
+
+# Deploy (automatically sets CF environment variables)
+./deploy.sh
 ```
+
+**Manual Environment Setup (if needed):**
+```bash
+cf set-env diagram-designer TELEEXCHANGE_USERNAME "prod_user"
+cf set-env diagram-designer TELEEXCHANGE_PASSWORD "prod_password"
+cf restart diagram-designer
+```
+
+---
+
+## 🔐 Authentication System
+
+### 🎯 **Generic Node-Based Authentication**
+
+The diagram designer features a **completely generic authentication system** that automatically matches credentials to services using node names. This eliminates hardcoded service logic and makes it easy to add authentication for any service.
+
+### 🚀 **How It Works**
+
+1. **Frontend**: Passes node name with API requests
+2. **Backend**: Looks up credentials using node name priority system
+3. **Authentication**: Applies appropriate auth headers to external requests
+
+### 🔧 **Authentication Priority Order**
+
+The system tries to find credentials in this order:
+
+1. **🏷️ Node Name** (Highest Priority)
+   ```bash
+   TELEEXCHANGE_USERNAME=username
+   TELEEXCHANGE_PASSWORD=password
+   ```
+
+2. **🌐 Exact Host Match**
+   ```bash
+   RMQ_CF986537_69CC_4107_8B66_5542481DE9BA_SYS_TAS_NDC_KUHN_LABS_COM_USERNAME=username
+   ```
+
+3. **🔧 Service Prefix**
+   ```bash
+   RMQ_USERNAME=username  # From rmq-*.example.com
+   ```
+
+4. **🔄 Common Patterns**
+   ```bash
+   RABBITMQ_USERNAME=username  # Generic service match
+   ```
+
+### 💼 **Supported Authentication Methods**
+
+| Method | Environment Variables | Headers Applied |
+|--------|---------------------|-----------------|
+| **🔐 Basic Auth** | `NODENAME_USERNAME`<br>`NODENAME_PASSWORD` | `Authorization: Basic <base64>` |
+| **🎫 Bearer Token** | `NODENAME_BEARER_TOKEN` | `Authorization: Bearer <token>` |
+| **🗝️ API Key** | `NODENAME_API_KEY`<br>`NODENAME_API_HEADER` (optional) | `X-API-Key: <key>` (default)<br>or custom header |
+| **🏷️ Custom Header** | `NODENAME_CLIENT_ID`<br>`NODENAME_CLIENT_HEADER` (optional) | `X-Client-ID: <id>` (default)<br>or custom header |
+
+### 📝 **Configuration Examples**
+
+#### **🐰 RabbitMQ Service**
+```bash
+# .config.env
+TELEEXCHANGE_USERNAME=9325d896-e0d4-4fb1-b2f2-17f13509e2fb
+TELEEXCHANGE_PASSWORD=mHbFqIgc2MoMetBauP5YHAHB
+```
+
+#### **📊 Monitoring API**
+```bash
+# .config.env
+MONITORING_API_KEY=abc123xyz789
+MONITORING_API_HEADER=X-Monitoring-Key  # Optional custom header
+```
+
+#### **🛡️ Custom Service**
+```bash
+# .config.env
+MYSERVICE_BEARER_TOKEN=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+```
+
+### 🔄 **Adding New Authenticated Services**
+
+1. **📋 Identify Node Name**: Check your JSON configuration
+   ```json
+   {
+     "name": "myService",  // 👈 This becomes MYSERVICE_*
+     "displayName": "My Service",
+     // ...
+   }
+   ```
+
+2. **🔧 Add Credentials**: Update `.config.env`
+   ```bash
+   MYSERVICE_USERNAME=my_username
+   MYSERVICE_PASSWORD=my_password
+   ```
+
+3. **☁️ Deploy**: Credentials are automatically set in Cloud Foundry
+   ```bash
+   ./deploy.sh
+   ```
+
+4. **✅ Verify**: Service requests now include authentication headers
+
+### 🌟 **Benefits**
+
+- **🔄 Zero Code Changes**: Add new services without touching code
+- **🧹 Clean Architecture**: No hardcoded service-specific logic
+- **🔒 Secure**: All credentials handled server-side
+- **📈 Scalable**: Works with any number of services
+- **🎯 Flexible**: Supports multiple authentication methods
+- **🚀 Auto-Deploy**: Deploy script handles Cloud Foundry environment variables
 
 ---
 

@@ -75,7 +75,36 @@ fi
 echo "✅ Logged into Cloud Foundry"
 cf target
 
-# Step 3: Deploy the application to Cloud Foundry
+# Step 3: Set environment variables from .config.env (if it exists)
+if [ -f ".config.env" ]; then
+    echo "🔧 Setting Cloud Foundry environment variables from .config.env..."
+
+    # Read each line from .config.env and set non-comment, non-empty lines as CF env vars
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Skip comments, empty lines, and lines that start with #
+        if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "${line// }" ]]; then
+            continue
+        fi
+
+        # Check if line contains = and extract key/value
+        if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
+            key="${BASH_REMATCH[1]// /}"  # Remove spaces from key
+            value="${BASH_REMATCH[2]}"
+
+            # Only set authentication-related variables for security
+            if [[ "$key" =~ ^(RABBITMQ|RMQ|MONITORING|API|DB|POSTGRES|MYSQL)_(USERNAME|PASSWORD|API_KEY|BEARER_TOKEN|CLIENT_ID|SECRET)$ ]]; then
+                echo "   Setting $key"
+                cf set-env diagram-designer "$key" "$value" > /dev/null 2>&1
+            fi
+        fi
+    done < ".config.env"
+
+    echo "✅ Environment variables set"
+else
+    echo "⚠️  No .config.env file found - skipping environment variable setup"
+fi
+
+# Step 4: Deploy the application to Cloud Foundry
 echo "🚀 Deploying application to Cloud Foundry..."
 cd diagram-designer-api
 cf push -f manifest.yml
@@ -85,17 +114,10 @@ if [ $? -eq 0 ]; then
     echo "🌐 Your app should be available at the URL shown above"
     echo ""
     echo "💡 Next steps:"
-    echo "1. Set your service credentials as environment variables:"
-    echo "   cf set-env diagram-designer RABBITMQ_USERNAME \"your_username\""
-    echo "   cf set-env diagram-designer RABBITMQ_PASSWORD \"your_password\""
-    echo "   cf set-env diagram-designer MONITORING_API_KEY \"your_api_key\""
-    echo "   # Add more variables as needed for your services"
-    echo ""
-    echo "2. Restart the application to pick up new variables:"
-    echo "   cf restage diagram-designer"
-    echo ""
-    echo "3. Check the application logs:"
+    echo "1. Check the application logs if needed:"
     echo "   cf logs diagram-designer --recent"
+    echo ""
+    echo "2. Add more credentials to .config.env if needed, then redeploy to update"
 else
     echo "❌ Deployment failed. Check the logs above for details."
     exit 1

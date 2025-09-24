@@ -4,6 +4,19 @@ import type { NodeProps } from 'reactflow';
 import type { NodeData, DataGridItem } from '../types/diagram';
 import { buildMetricsUrl, log, appConfig } from '../config/appConfig';
 
+// Utility function to get nested object values by path (e.g., "measurements[0].value")
+const getNestedValue = (obj: any, path: string): any => {
+  try {
+    return path.split(/[.\[\]]/).filter(Boolean).reduce((current, key) => {
+      if (current === null || current === undefined) return undefined;
+      return current[key];
+    }, obj);
+  } catch (error) {
+    log.warn(`Error accessing path "${path}":`, error);
+    return undefined;
+  }
+};
+
 // Component for individual metric rows
 const MetricRow: React.FC<{ metric: DataGridItem; nodeName: string }> = ({ metric, nodeName }) => {
   const [value, setValue] = useState<string>('Loading...');
@@ -12,14 +25,14 @@ const MetricRow: React.FC<{ metric: DataGridItem; nodeName: string }> = ({ metri
   useEffect(() => {
     const fetchMetric = async () => {
       try {
-        const proxyUrl = buildMetricsUrl(metric.url);
+        const proxyUrl = buildMetricsUrl(metric.url, nodeName);
         log.debug(`Fetching metric for ${nodeName}:`, proxyUrl);
 
         const response = await fetch(proxyUrl);
 
         if (response.ok) {
           const data = await response.json();
-          const metricValue = data[metric.valueField];
+          const metricValue = getNestedValue(data, metric.valueField);
 
           if (metricValue !== undefined && metricValue !== null) {
             // Format numbers nicely
@@ -91,7 +104,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
       });
 
       // Use the metrics proxy for all requests
-      const proxyUrl = buildMetricsUrl(data.status.url);
+      const proxyUrl = buildMetricsUrl(data.status.url, data.name);
       log.debug(`Using proxy URL: ${proxyUrl}`);
 
       const response = await fetch(proxyUrl, {
@@ -107,7 +120,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
         const result = await response.json();
         log.debug(`Response data for ${data.name}:`, result);
 
-        const statusValue = result[data.status.valueField];
+        const statusValue = getNestedValue(result, data.status.valueField);
         log.debug(`Extracted status value: "${statusValue}" for ${data.name}`);
 
         if (statusValue === data.status.upValue) {

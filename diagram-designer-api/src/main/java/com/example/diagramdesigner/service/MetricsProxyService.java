@@ -42,7 +42,11 @@ public class MetricsProxyService {
     }
 
     public Mono<ResponseEntity<Object>> proxyRequest(String targetUrl) {
-        logger.debug("Proxying request to: {}", targetUrl);
+        return proxyRequest(targetUrl, null);
+    }
+
+    public Mono<ResponseEntity<Object>> proxyRequest(String targetUrl, String nodeName) {
+        logger.debug("Proxying request to: {} (node: {})", targetUrl, nodeName);
 
         // Check cache first
         if (properties.isEnableCaching()) {
@@ -53,7 +57,7 @@ public class MetricsProxyService {
             }
         }
 
-        return makeAuthenticatedRequest(targetUrl)
+        return makeAuthenticatedRequest(targetUrl, nodeName)
                 .map(response -> {
                     // Cache the response if enabled
                     if (properties.isEnableCaching()) {
@@ -65,11 +69,15 @@ public class MetricsProxyService {
     }
 
     private Mono<Object> makeAuthenticatedRequest(String targetUrl) {
+        return makeAuthenticatedRequest(targetUrl, null);
+    }
+
+    private Mono<Object> makeAuthenticatedRequest(String targetUrl, String nodeName) {
         try {
             // Build the request with authentication
             WebClient.RequestHeadersSpec<?> request = webClient.get()
                     .uri(targetUrl)
-                    .headers(headers -> authenticationResolver.addAuthenticationHeaders(headers, targetUrl))
+                    .headers(headers -> authenticationResolver.addAuthenticationHeaders(headers, targetUrl, nodeName))
                     .headers(headers -> headers.add("User-Agent", "Diagram-Designer-Proxy/1.0"));
 
             return request.retrieve()
