@@ -1,0 +1,14 @@
+{
+  "title": "Greenplum Data Warehouse",
+  "description": "Fleet Performance Analytics Dashboard",
+  "modalSize": {
+    "width": "95%",
+    "height": "85vh",
+    "maxWidth": "2400px",
+    "maxHeight": "1800px"
+  },
+  "customPage": {
+    "type": "html-file",
+    "file": "gpdb.html"
+  }
+}
