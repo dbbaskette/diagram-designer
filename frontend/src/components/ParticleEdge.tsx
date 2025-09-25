@@ -26,6 +26,12 @@ const ParticleEdge: React.FC<ParticleEdgeProps> = ({
   // Get particle configuration from data
   const particles = data?.particles || { enabled: false };
 
+  // Debug logging
+  console.log(`🎨 ParticleEdge ${id} - data:`, data);
+  console.log(`🎨 ParticleEdge ${id} - particles:`, particles);
+  console.log(`🎨 ParticleEdge ${id} - has text:`, !!particles?.text);
+  console.log(`🎨 ParticleEdge ${id} - text value:`, particles?.text);
+
   // Create a smooth curved path
   const createCurvedPath = () => {
     const midX = (sourceX + targetX) / 2;
@@ -56,8 +62,13 @@ const ParticleEdge: React.FC<ParticleEdgeProps> = ({
     console.log(`Particle direction: ${particles.direction}, pathData: ${pathData}`);
 
     for (let i = 0; i < particleCount; i++) {
-      const delay = (i / particleCount) * 1.5; // Stagger particles
-      const size = 3 + Math.random() * 2; // Random size between 3-5
+      // Use density to control particle spacing (higher density = closer particles)
+      const baseStaggeer = 1.5;
+      const densityFactor = (particles.density || 100) / 100;
+      const staggerTime = baseStaggeer / densityFactor; // Higher density = shorter stagger
+      const delay = (i / particleCount) * staggerTime;
+      const baseSize = particles.size || 6; // Use configured size or default to 6
+      const size = baseSize + Math.random() * 2 - 1; // Add slight randomness (-1 to +1)
       const animationDuration = `${(particles.speed || 5) > 0 ? (11 - (particles.speed || 5)) / 3 : 1.5}s`;
 
       particleElements.push(
@@ -91,15 +102,20 @@ const ParticleEdge: React.FC<ParticleEdgeProps> = ({
           </circle>
 
           {/* Add text that moves with the particle */}
-          {particles.text && (
-            <text
-              fontSize={particles.fontSize || 12}
-              fill={particles.textColor || 'white'}
+          {particles.text && (() => {
+            console.log(`🎯 Creating text for particle ${i}: "${particles.text}", color: ${particles.textColor}, fontSize: ${particles.fontSize}`);
+            return (
+              <text
+              fontSize={particles.fontSize || 14}
+              fill={particles.textColor || '#ffffff'}
               textAnchor="middle"
-              dominantBaseline="central"
+              dominantBaseline="middle"
               fontWeight="bold"
-              filter="url(#text-glow)"
-              opacity={0.9}
+              style={{
+                pointerEvents: 'none',
+                userSelect: 'none',
+                textShadow: '0 0 4px rgba(0,0,0,0.8)'
+              }}
             >
               {particles.text}
               <animateMotion
@@ -116,7 +132,8 @@ const ParticleEdge: React.FC<ParticleEdgeProps> = ({
                 begin={`${delay}s`}
               />
             </text>
-          )}
+            );
+          })()}
         </g>
       );
     }

@@ -84,9 +84,9 @@ const MetricRow: React.FC<{ metric: DataGridItem; nodeName: string }> = ({ metri
 };
 
 const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
-  // Get handle configuration from node data
-  const inputHandles = data.handles?.input || 1;
-  const outputHandles = data.handles?.output || 1;
+  // Get handle configuration from node data (allow 0 handles)
+  const inputHandles = data.handles?.input !== undefined ? data.handles.input : 1;
+  const outputHandles = data.handles?.output !== undefined ? data.handles.output : 1;
   
   // Status monitoring state
   const [status, setStatus] = useState<'up' | 'down' | 'unknown'>('unknown');
@@ -227,7 +227,6 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
 
   // Generate input handles
   const inputHandleElements = [];
-  console.log(`Creating ${inputHandles} input handles for ${data.name}`);
   for (let i = 0; i < inputHandles; i++) {
     let topPosition = '50%'; // Default center position
     
@@ -260,7 +259,6 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
   
   // Generate output handles
   const outputHandleElements = [];
-  console.log(`Creating ${outputHandles} output handles for ${data.name}`);
   for (let i = 0; i < outputHandles; i++) {
     let topPosition = '50%'; // Default center position
     

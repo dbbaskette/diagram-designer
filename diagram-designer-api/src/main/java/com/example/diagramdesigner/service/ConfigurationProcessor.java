@@ -43,6 +43,16 @@ public class ConfigurationProcessor {
             // Parse the JSON
             JsonNode rootNode = objectMapper.readTree(jsonContent);
 
+            // Debug logging for telegen node
+            JsonNode nodesArray = rootNode.get("nodes");
+            if (nodesArray != null && nodesArray.isArray()) {
+                for (JsonNode node : nodesArray) {
+                    if ("telegen".equals(node.get("name").asText())) {
+                        logger.info("🔍 SPRING: Found telegen node with particles: {}", node.get("particles"));
+                    }
+                }
+            }
+
             // Process the entire tree
             JsonNode processedNode = processNode(rootNode);
 

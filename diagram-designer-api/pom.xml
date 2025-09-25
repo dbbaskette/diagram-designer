@@ -140,6 +140,38 @@
                 </executions>
             </plugin>
 
+            <!-- Clean Static Resources Plugin - Prevents Stale Build Artifacts -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <id>clean-static-resources</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <filesets>
+                                <fileset>
+                                    <directory>src/main/resources/static/assets</directory>
+                                    <followSymlinks>false</followSymlinks>
+                                </fileset>
+                                <fileset>
+                                    <directory>src/main/resources/static</directory>
+                                    <includes>
+                                        <include>index.html</include>
+                                        <include>manifest.json</include>
+                                        <include>vite.svg</include>
+                                    </includes>
+                                    <followSymlinks>false</followSymlinks>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
             <!-- Copy Frontend Build to Static Resources -->
             <plugin>

@@ -136,6 +136,20 @@ public class DiagramController {
                     // Read the JSON content from classpath
                     String jsonContent = new String(configResource.getInputStream().readAllBytes());
 
+                    logger.info("🔍 SPRING: Loading {} from classpath, raw content length: {}", filename, jsonContent.length());
+
+                    // Log first telegen node if present
+                    if (jsonContent.contains("telegen")) {
+                        int idx = jsonContent.indexOf("telegen");
+                        if (idx > 0) {
+                            int particleIdx = jsonContent.indexOf("particles", idx);
+                            if (particleIdx > 0 && particleIdx < idx + 500) {
+                                String snippet = jsonContent.substring(particleIdx, Math.min(particleIdx + 200, jsonContent.length()));
+                                logger.info("🔍 SPRING: Telegen particles snippet: {}", snippet);
+                            }
+                        }
+                    }
+
                     // Process variable substitutions
                     String processedContent = configurationProcessor.processVariableSubstitution(jsonContent);
 

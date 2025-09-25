@@ -54,7 +54,42 @@ else
     echo "   Continuing with environment variables only..."
 fi
 
-# Step 1: Build the complete application (frontend + backend)
+# Step 1: Sync configuration files to resources directory
+echo "🔧 Syncing latest configs to resources directory..."
+
+# Copy main config files
+cp "configs/Telemetry-Processing.json" "diagram-designer-api/src/main/resources/static/configs/"
+
+# Create details directory if it doesn't exist
+mkdir -p "diagram-designer-api/src/main/resources/static/configs/details"
+
+# Copy all detail config files
+cp configs/details/*.json "diagram-designer-api/src/main/resources/static/configs/details/" 2>/dev/null || echo "No detail configs to copy"
+cp configs/details/*.html "diagram-designer-api/src/main/resources/static/configs/details/" 2>/dev/null || echo "No detail HTML files to copy"
+
+# Verify the main config has text properties
+if grep -q '"text"' "diagram-designer-api/src/main/resources/static/configs/Telemetry-Processing.json"; then
+    echo "✅ Text properties confirmed in resources config"
+else
+    echo "❌ Text properties missing in resources config"
+fi
+
+# Verify gpdb.json was copied
+if [ -f "diagram-designer-api/src/main/resources/static/configs/details/gpdb.json" ]; then
+    echo "✅ gpdb.json copied to resources"
+else
+    echo "❌ gpdb.json missing in resources"
+fi
+
+# Step 1.5: Clean stale static resources to prevent caching issues
+echo "🧹 Cleaning stale static resources to prevent caching issues..."
+rm -rf "diagram-designer-api/src/main/resources/static/assets"
+rm -f "diagram-designer-api/src/main/resources/static/index.html"
+rm -f "diagram-designer-api/src/main/resources/static/manifest.json"
+rm -f "diagram-designer-api/src/main/resources/static/vite.svg"
+echo "✅ Stale static resources cleared"
+
+# Step 2: Build the complete application (frontend + backend)
 echo "📦 Building complete application with Maven (includes frontend build)..."
 mvn clean package -DskipTests
 
@@ -63,7 +98,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Step 2: Check if logged into CF
+# Step 3: Check if logged into CF
 echo "🔐 Checking Cloud Foundry login status..."
 cf target > /dev/null 2>&1
 if [ $? -ne 0 ]; then
@@ -75,7 +110,7 @@ fi
 echo "✅ Logged into Cloud Foundry"
 cf target
 
-# Step 3: Set environment variables from .config.env (if it exists)
+# Step 4: Set environment variables from .config.env (if it exists)
 if [ -f ".config.env" ]; then
     echo "🔧 Setting Cloud Foundry environment variables from .config.env..."
 
@@ -104,7 +139,7 @@ else
     echo "⚠️  No .config.env file found - skipping environment variable setup"
 fi
 
-# Step 4: Deploy the application to Cloud Foundry
+# Step 5: Deploy the application to Cloud Foundry
 echo "🚀 Deploying application to Cloud Foundry..."
 cd diagram-designer-api
 cf push -f manifest.yml

@@ -16,6 +16,22 @@ export interface Connection {
   target: string;
   outputHandle?: number; // Which output handle to use (0-based index)
   inputHandle?: number;  // Which input handle to use on target (0-based index)
+  lineType?: 'solid' | 'dashed';
+  lineColor?: string;
+  edgeType?: 'default' | 'smoothstep' | 'straight' | 'step' | 'curved' | 'particle';
+  particles?: {
+    enabled: boolean;
+    speed?: number;
+    density?: number;
+    color?: string;
+    size?: number;        // Size of the particles (default: 6)
+    count?: number;       // Number of particles per line
+    direction?: 'source' | 'target'; // 'source' = particles flow out, 'target' = particles flow in
+    text?: string;        // Text that moves with particles
+    label?: string;       // Static text label on the edge
+    fontSize?: number;    // Size of the text (default: 12)
+    textColor?: string;   // Color of the text (default: white)
+  };
 }
 
 export interface DiagramNode {
@@ -44,7 +60,8 @@ export interface DiagramNode {
     speed?: number;
     density?: number;
     color?: string;
-    count?: number;  // Number of particles per line
+    size?: number;        // Size of the particles (default: 6)
+    count?: number;       // Number of particles per line
     direction?: 'source' | 'target'; // 'source' = particles flow out, 'target' = particles flow in
     text?: string;        // Text that moves with particles
     label?: string;       // Static text label on the edge

@@ -45,23 +45,8 @@
         }
       ],
       "connectTo": [],
-      "lineType": "dashed",
-      "lineColor": "#3498db",
-      "edgeType": "curved",
-      "particles": {
-        "enabled": true,
-        "speed": 2,
-        "density": 150,
-        "color": "#3498db",
-        "count": 5,
-        "direction": "target",
-        "text": "DATA",
-        "label": "Telematics Stream",
-        "fontSize": 10,
-        "textColor": "#ffffff"
-      },
       "handles": {
-        "input": 1,
+        "input": 0,
         "output": 1
       }
     },
@@ -101,20 +86,21 @@
         {
           "target": "telegen",
           "outputHandle": 0,
-          "inputHandle": 0
+          "inputHandle": 0,
+          "lineType": "solid",
+          "lineColor": "#76D72A",
+          "edgeType": "curved",
+          "particles": {
+            "enabled": true,
+            "speed": 1.5,
+            "density": 100,
+            "color": "#3498db",
+            "size": 5,
+            "count": 4,
+            "direction": "target"
+          }
         }
       ],
-      "lineType": "solid",
-      "lineColor": "#76D72A",
-      "edgeType": "curved",
-      "particles": {
-        "enabled": true,
-        "speed": 1.5,
-        "density": 100,
-        "color": "#F8F8F8",
-        "count": 4,
-        "direction": "target"
-      },
       "handles": {
         "input": 1,
         "output": 2
@@ -155,20 +141,20 @@
         {
           "target": "teleExchange",
           "outputHandle": 0,
-          "inputHandle": 0
+          "inputHandle": 0,
+          "lineType": "solid",
+          "lineColor": "#e74c3c",
+          "edgeType": "curved",
+          "particles": {
+            "enabled": true,
+            "speed": 5,
+            "density": 200,
+            "color": "#F8F8F8",
+            "count": 5,
+            "direction": "target"
+          }
         }
       ],
-      "lineType": "solid",
-      "lineColor": "#e74c3c",
-      "edgeType": "curved",
-      "particles": {
-        "enabled": true,
-        "speed": 5,
-        "density": 200,
-        "color": "#F8F8F8",
-        "count": 5,
-        "direction": "target"
-      },
       "handles": {
         "input": 1,
         "output": 1
@@ -209,20 +195,20 @@
         {
           "target": "teleExchange",
           "outputHandle": 1,
-          "inputHandle": 0
+          "inputHandle": 0,
+          "lineType": "solid",
+          "lineColor": "#e74c3c",
+          "edgeType": "curved",
+          "particles": {
+            "enabled": true,
+            "speed": 5,
+            "density": 200,
+            "color": "#F8F8F8",
+            "count": 5,
+            "direction": "target"
+          }
         }
       ],
-      "lineType": "solid",
-      "lineColor": "#e74c3c",
-      "edgeType": "curved",
-      "particles": {
-        "enabled": true,
-        "speed": 5,
-        "density": 200,
-        "color": "#F8F8F8",
-        "count": 5,
-        "direction": "target"
-      },
       "handles": {
         "input": 1,
         "output": 1
@@ -264,20 +250,20 @@
         {
           "target": "HDFSsink",
           "outputHandle": 1,
-          "inputHandle": 0
+          "inputHandle": 0,
+          "lineType": "solid",
+          "lineColor": "#e74c3c",
+          "edgeType": "curved",
+          "particles": {
+            "enabled": true,
+            "speed": 5,
+            "density": 200,
+            "color": "#F8F8F8",
+            "count": 5,
+            "direction": "target"
+          }
         }
       ],
-      "lineType": "solid",
-      "lineColor": "#e74c3c",
-      "edgeType": "curved",
-      "particles": {
-        "enabled": true,
-        "speed": 5,
-        "density": 200,
-        "color": "#F8F8F8",
-        "count": 5,
-        "direction": "target"
-      },
       "handles": {
         "input": 1,
         "output": 1
@@ -317,24 +303,20 @@
         {
           "target": "EventsProc",
           "outputHandle": 0,
-          "inputHandle": 0
+          "inputHandle": 0,
+          "lineType": "solid",
+          "lineColor": "#76D72A",
+          "edgeType": "curved",
+          "particles": {
+            "enabled": true,
+            "speed": 1.5,
+            "density": 100,
+            "color": "#F8F8F8",
+            "count": 4,
+            "direction": "target"
+          }
         }
       ],
-      "lineType": "solid",
-      "lineColor": "#76D72A",
-      "edgeType": "curved",
-      "particles": {
-        "enabled": true,
-        "speed": 1.5,
-        "density": 100,
-        "color": "#F8F8F8",
-        "count": 4,
-        "direction": "target",
-        "text": "EVENTS",
-        "label": "Processing Pipeline",
-        "fontSize": 11,
-        "textColor": "#FFD700"
-      },
       "handles": {
         "input": 1,
         "output": 2
@@ -374,20 +356,20 @@
         {
           "target": "vehicleExchange",
           "outputHandle": 0,
-          "inputHandle": 0
+          "inputHandle": 0,
+          "lineType": "solid",
+          "lineColor": "#76D72A",
+          "edgeType": "curved",
+          "particles": {
+            "enabled": true,
+            "speed": 1.5,
+            "density": 100,
+            "color": "#F8F8F8",
+            "count": 4,
+            "direction": "target"
+          }
         }
       ],
-      "lineType": "solid",
-      "lineColor": "#76D72A",
-      "edgeType": "curved",
-      "particles": {
-        "enabled": true,
-        "speed": 1.5,
-        "density": 100,
-        "color": "#F8F8F8",
-        "count": 4,
-        "direction": "target"
-      },
       "handles": {
         "input": 1,
         "output": 1
@@ -404,33 +386,56 @@
       },
       "circleColor": "#76D72A",
       "clickBehavior": "modal",
+      "status": {
+        "url": "https://imc-db-server.apps.tas-ndc.kuhn-labs.com/api/db01/health",
+        "valueField": "data.status",
+        "upValue": "UP",
+        "downValue": "DOWN",
+        "updateInterval": 30000
+      },
       "dataGrid": [],
       "connectTo": [
         {
           "target": "JDBCsink",
           "outputHandle": 0,
-          "inputHandle": 1
+          "inputHandle": 1,
+          "lineType": "solid",
+          "lineColor": "#3498db",
+          "edgeType": "curved",
+          "particles": {
+            "enabled": true,
+            "speed": 1.5,
+            "density": 100,
+            "color": "#3498db",
+            "size": 6,
+            "count": 4,
+            "direction": "target"
+          }
         },
         {
           "target": "hdfs",
           "outputHandle": 1,
-          "inputHandle": 1
+          "inputHandle": 1,
+          "lineType": "dashed",
+          "lineColor": "#e74c3c",
+          "edgeType": "curved",
+          "particles": {
+            "enabled": true,
+            "speed": 1.5,
+            "density": 100,
+            "color": "#3498db",
+            "size": 8,
+            "text": "PXF",
+            "textColor": "#ffffff",
+            "fontSize": 8,
+            "count": 4,
+            "direction": "target"
+          }
         }
       ],
-      "lineType": "solid",
-      "lineColor": "#76D72A",
-      "edgeType": "curved",
-      "particles": {
-        "enabled": true,
-        "speed": 1.5,
-        "density": 100,
-        "color": "#F8F8F8",
-        "count": 4,
-        "direction": "target"
-      },
       "handles": {
         "input": 1,
-        "output": 2
+        "output": 0
       }
     },
     {
@@ -469,20 +474,20 @@
         {
           "target": "vehicleExchange",
           "outputHandle": 1,
-          "inputHandle": 0
+          "inputHandle": 0,
+          "lineType": "solid",
+          "lineColor": "#76D72A",
+          "edgeType": "curved",
+          "particles": {
+            "enabled": true,
+            "speed": 1.5,
+            "density": 100,
+            "color": "#F8F8F8",
+            "count": 4,
+            "direction": "target"
+          }
         }
       ],
-      "lineType": "solid",
-      "lineColor": "#76D72A",
-      "edgeType": "curved",
-      "particles": {
-        "enabled": true,
-        "speed": 1.5,
-        "density": 100,
-        "color": "#F8F8F8",
-        "count": 4,
-        "direction": "target"
-      },
       "handles": {
         "input": 1,
         "output": 0

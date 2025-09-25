@@ -1,0 +1,26 @@
+spring:
+  profiles:
+    active: dev
+
+server:
+  port: 3001
+
+logging:
+  level:
+    com.example.diagramdesigner: DEBUG
+
+metrics:
+  proxy:
+    enable-caching: false
+    auth:
+      rabbitmq.example.com:
+        type: basic
+        username: ${RABBITMQ_USERNAME:admin}
+        password: ${RABBITMQ_PASSWORD:admin}
+      monitoring.example.com:
+        type: apikey
+        header-name: X-API-Key
+        header-value: ${MONITORING_API_KEY:demo-key}
+      metrics.example.com:
+        type: bearer
+        token: ${METRICS_BEARER_TOKEN:demo-token}

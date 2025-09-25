@@ -44,6 +44,10 @@ const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDiagram
       try {
         const response = await fetch(`/api/diagrams/${selectedDiagram}`);
         const data: DiagramConfig = await response.json();
+        console.log(`🔍 Loaded diagram: ${selectedDiagram} at ${new Date().toISOString()}`);
+        console.log(`🔍 Full telegen node:`, data.nodes.find(n => n.name === 'telegen'));
+        console.log(`🔍 Sample node particles:`, data.nodes.find(n => n.name === 'telegen')?.particles);
+        console.log(`🔍 All nodes with particles:`, data.nodes.filter(n => n.particles?.enabled).map(n => ({name: n.name, particles: n.particles})));
         setConfig(data);
         
         // Notify parent component that config is loaded
@@ -89,24 +93,43 @@ const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDiagram
             // Find the target node to get its properties
             const targetNode = data.nodes.find(n => n.name === sourceId);
             if (targetNode) {
-              // Use the CURRENT node's particle configuration (the node that defines the connection)
-              const particles = node.particles;
+              // Check for connection-specific particle configuration first, then fall back to node-level
+              const connectionParticles = typeof connection === 'object' ? connection.particles : undefined;
+              const particles = connectionParticles || node.particles;
               
-              // Debug logging
-              console.log(`Edge: ${node.name} -> ${sourceId}, Current node particles:`, particles);
+              // Debug logging - only for nodes with particles
+              if (particles?.enabled) {
+                console.log(`🔥 Edge: ${node.name} -> ${sourceId}`);
+                console.log(`🔥 Particle config:`, {
+                  enabled: particles.enabled,
+                  text: particles.text,
+                  textColor: particles.textColor,
+                  fontSize: particles.fontSize,
+                  color: particles.color
+                });
+              }
               
+              // Get connection-specific styling or fall back to node-level
+              const connectionLineType = typeof connection === 'object' ? connection.lineType : undefined;
+              const connectionLineColor = typeof connection === 'object' ? connection.lineColor : undefined;
+              const connectionEdgeType = typeof connection === 'object' ? connection.edgeType : undefined;
+
+              const lineType = connectionLineType || node.lineType;
+              const lineColor = connectionLineColor || node.lineColor || '#3498db';
+              const baseEdgeType = connectionEdgeType || node.edgeType || 'smoothstep';
+
               // Determine edge type based on particles and edgeType
-              let edgeType = node.edgeType || 'smoothstep';
+              let edgeType = baseEdgeType;
               if (particles?.enabled) {
                 edgeType = 'particle';
               }
-              
+
               // Create edge based on direction
               // If direction is "source", edge goes from current node to target
               // If direction is "target", edge goes from target to current node
-              const edgeSource = node.particles?.direction === 'source' ? node.name : sourceId;
-              const edgeTarget = node.particles?.direction === 'source' ? sourceId : node.name;
-              
+              const edgeSource = particles?.direction === 'source' ? node.name : sourceId;
+              const edgeTarget = particles?.direction === 'source' ? sourceId : node.name;
+
               flowEdges.push({
                 id: `${edgeSource}-${edgeTarget}-${index}`,
                 source: edgeSource,
@@ -116,16 +139,16 @@ const DiagramView: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDiagram
                 type: edgeType,
                 animated: particles?.enabled || false,
                 style: {
-                  stroke: node.lineColor || '#3498db',
+                  stroke: lineColor,
                   strokeWidth: 2,
-                  strokeDasharray: node.lineType === 'dashed' ? '5,5' : undefined,
+                  strokeDasharray: lineType === 'dashed' ? '5,5' : undefined,
                 },
                 pathOptions: {
                   borderRadius: 20,
                 },
                 data: {
                   particles: particles,
-                  originalEdgeType: node.edgeType || 'smoothstep',
+                  originalEdgeType: baseEdgeType,
                 },
               });
             }

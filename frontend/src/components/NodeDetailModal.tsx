@@ -12,6 +12,12 @@ interface NodeDetailModalProps {
 export interface NodeDetailConfig {
   title?: string;
   description?: string;
+  modalSize?: {
+    width?: string;  // e.g., "800px", "90%", "90vw"
+    height?: string; // e.g., "600px", "80%", "80vh"
+    maxWidth?: string; // e.g., "1200px"
+    maxHeight?: string; // e.g., "900px"
+  };
   sections?: NodeDetailSection[];
   links?: NodeDetailLink[];
   customPage?: {
@@ -265,11 +271,12 @@ const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden relative"
+        className="bg-white rounded-lg shadow-xl overflow-hidden relative"
         style={{
-          maxWidth: '64rem',
-          width: '90%',
-          maxHeight: '90vh',
+          width: content.modalSize?.width || '90%',
+          height: content.modalSize?.height || 'auto',
+          maxWidth: content.modalSize?.maxWidth || '64rem',
+          maxHeight: content.modalSize?.maxHeight || '90vh',
           margin: '0 1rem'
         }}
         onClick={(e) => e.stopPropagation()}
@@ -338,7 +345,11 @@ const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
               {content.customPage.type === 'html-file' && content.customPage.file && (
                 <iframe
                   src={`/configs/details/${content.customPage.file}?t=${Date.now()}`}
-                  className="w-full h-[600px] border-0 rounded"
+                  className="w-full border-0 rounded"
+                  style={{
+                    height: content.modalSize?.height ?
+                      `calc(${content.modalSize.height} - 120px)` : '600px'
+                  }}
                   title={`${nodeData.name} Dashboard`}
                 />
               )}
@@ -348,7 +359,11 @@ const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
             <div className="mb-6">
               <iframe
                 src={`/configs/details/${nodeData.name}.html?t=${Date.now()}`}
-                className="w-full h-[600px] border-0 rounded"
+                className="w-full border-0 rounded"
+                style={{
+                  height: content.modalSize?.height ?
+                    `calc(${content.modalSize.height} - 120px)` : '600px'
+                }}
                 title={`${nodeData.name} Dashboard`}
                 onError={(e) => {
                   // Hide iframe if HTML file doesn't exist
