@@ -1,0 +1,106 @@
+{
+  "config": {
+    "layout": "horizontal",
+    "updateInterval": 30000,
+    "title": "Example System with Authentication",
+    "nodeGlow": {
+      "enabled": true,
+      "intensity": 8,
+      "spread": 12
+    }
+  },
+  "nodes": [
+    {
+      "name": "message-queue",
+      "displayName": "Message Queue",
+      "description": "RabbitMQ message broker with authentication",
+      "icon": "🐰",
+      "position": { "x": 100, "y": 200 },
+      "circleColor": "#76D72A",
+      "url": "https://${RABBITMQ_HOSTNAME:rabbitmq.example.com}/management",
+      "status": {
+        "url": "https://${RABBITMQ_HOSTNAME:rabbitmq.example.com}/api/overview",
+        "valueField": "node",
+        "upValue": "running",
+        "downValue": "stopped",
+        "updateInterval": 15000
+      },
+      "dataGrid": [
+        {
+          "label": "Queue Depth",
+          "url": "https://${RABBITMQ_HOSTNAME:rabbitmq.example.com}/api/queues",
+          "valueField": "messages"
+        },
+        {
+          "label": "Connections",
+          "url": "https://${RABBITMQ_HOSTNAME:rabbitmq.example.com}/api/connections",
+          "valueField": "length"
+        }
+      ],
+      "connectTo": ["api-server"],
+      "lineType": "solid",
+      "lineColor": "#76D72A"
+    },
+    {
+      "name": "api-server",
+      "displayName": "API Server",
+      "description": "REST API server with monitoring",
+      "icon": "⚙️",
+      "position": { "x": 400, "y": 200 },
+      "circleColor": "#3498db",
+      "url": "https://${API_HOSTNAME:api.example.com}/dashboard",
+      "status": {
+        "url": "https://${API_HOSTNAME:api.example.com}/health",
+        "valueField": "status",
+        "upValue": "UP",
+        "downValue": "DOWN",
+        "updateInterval": 10000
+      },
+      "dataGrid": [
+        {
+          "label": "Requests/sec",
+          "url": "https://${MONITORING_HOSTNAME:monitoring.example.com}/api/metrics/requests",
+          "valueField": "rate"
+        },
+        {
+          "label": "Response Time",
+          "url": "https://${MONITORING_HOSTNAME:monitoring.example.com}/api/metrics/latency",
+          "valueField": "avgMs"
+        }
+      ],
+      "connectTo": ["database"],
+      "lineType": "solid",
+      "lineColor": "#3498db"
+    },
+    {
+      "name": "database",
+      "displayName": "Database",
+      "description": "PostgreSQL database",
+      "icon": "🗄️",
+      "position": { "x": 700, "y": 200 },
+      "circleColor": "#336791",
+      "status": {
+        "url": "https://${DB_MONITOR_HOSTNAME:db-monitor.example.com}/api/health",
+        "valueField": "status",
+        "upValue": "healthy",
+        "downValue": "unhealthy",
+        "updateInterval": 30000
+      },
+      "dataGrid": [
+        {
+          "label": "Connections",
+          "url": "https://${DB_MONITOR_HOSTNAME:db-monitor.example.com}/api/connections",
+          "valueField": "active"
+        },
+        {
+          "label": "Query Time",
+          "url": "https://${DB_MONITOR_HOSTNAME:db-monitor.example.com}/api/performance",
+          "valueField": "avgQueryMs"
+        }
+      ],
+      "connectTo": [],
+      "lineType": "solid",
+      "lineColor": "#336791"
+    }
+  ]
+}

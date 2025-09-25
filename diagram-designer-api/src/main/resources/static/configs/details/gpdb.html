@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Greenplum Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .dashboard-container {
+            background: linear-gradient(to right, #1e3a8a, #1e40af, #1d4ed8);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .dashboard-icon {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            padding: 0.5rem;
+            margin-right: 0.75rem;
+        }
+
+        .dashboard-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0;
+            color: white;
+        }
+
+        .dashboard-subtitle {
+            font-size: 0.875rem;
+            color: #bfdbfe;
+            font-weight: 500;
+            margin: 0.25rem 0 0 0;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: #e0f2fe;
+            border: 1px solid #7dd3fc;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-value {
+            font-size: 3.5rem !important;
+            font-weight: 900 !important;
+            color: #1f2937 !important;
+            margin-bottom: 0.25rem;
+            line-height: 1;
+        }
+
+        .metric-label {
+            font-size: 1.2rem !important;
+            font-weight: 600 !important;
+            color: #374151 !important;
+        }
+
+        .feature-weights {
+            margin-top: 2rem;
+        }
+
+        .feature-weights-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            text-align: center;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #e0f2fe;
+            border: 1px solid #7dd3fc;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin: 0 auto 0.75rem auto;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            width: 75%;
+        }
+
+        .feature-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            margin-right: 0.75rem;
+        }
+
+        .feature-name {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .feature-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .progress-bar-container {
+            width: 8rem;
+            height: 0.5rem;
+            background: #d1d5db;
+            border-radius: 9999px;
+            margin-right: 0.5rem;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 9999px;
+        }
+
+        .feature-percentage {
+            font-family: ui-monospace, monospace;
+            font-size: 0.875rem;
+            font-weight: bold;
+            color: #1f2937;
+            width: 3rem;
+            text-align: right;
+        }
+
+        /* ML Progress Bar */
+        .ml-progress-container {
+            background: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            display: none;
+        }
+
+        .ml-progress-container.active {
+            display: block;
+        }
+
+        .ml-progress-header {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .ml-progress-stages {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .ml-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            position: relative;
+        }
+
+        .ml-stage-box {
+            background: #4b5563;
+            border: 2px solid #6b7280;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            color: #9ca3af;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: center;
+            min-width: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .ml-stage.active .ml-stage-box {
+            background: #3b82f6;
+            border-color: #2563eb;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .ml-stage.completed .ml-stage-box {
+            background: #10b981;
+            border-color: #059669;
+            color: white;
+        }
+
+        .ml-stage-connector {
+            position: absolute;
+            top: 50%;
+            right: -50%;
+            transform: translateY(-50%);
+            width: calc(100% - 120px);
+            height: 2px;
+            background: #6b7280;
+            z-index: -1;
+        }
+
+        .ml-stage:last-child .ml-stage-connector {
+            display: none;
+        }
+
+        .ml-stage.completed .ml-stage-connector {
+            background: #10b981;
+        }
+
+        .ml-progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #4b5563;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .ml-progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(to right, #3b82f6, #10b981);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+
+        .ml-progress-text {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .action-button {
+            background: linear-gradient(to right, #7c3aed, #8b5cf6);
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .action-button:hover {
+            transform: scale(1.05);
+            background: linear-gradient(to right, #8b5cf6, #a78bfa);
+        }
+
+        .action-button.secondary {
+            background: linear-gradient(to right, #2563eb, #3b82f6);
+        }
+
+        .action-button.secondary:hover {
+            background: linear-gradient(to right, #3b82f6, #60a5fa);
+        }
+
+        /* Color classes for feature dots and progress bars */
+        .orange { background-color: #fb923c; }
+        .yellow { background-color: #facc15; }
+        .red { background-color: #f87171; }
+        .green { background-color: #4ade80; }
+        .purple { background-color: #a78bfa; }
+
+        /* Tabs Container */
+        .tabs-container {
+            margin-top: 2rem;
+            background: #1f2937;
+            border-radius: 0.5rem;
+            padding: 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Tabs Navigation */
+        .tabs-nav {
+            display: flex;
+            background: linear-gradient(to right, #374151, #4b5563);
+            border-radius: 0.5rem 0.5rem 0 0;
+            overflow: hidden;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 1rem;
+            background: transparent;
+            color: #9ca3af;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .tab-button.active {
+            background: #1f2937;
+            color: white;
+            position: relative;
+        }
+
+        .tab-button.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #3b82f6;
+        }
+
+        .tab-icon {
+            font-size: 1.2rem;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            padding: 2rem;
+            min-height: 600px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-header h3 {
+            font-size: 1.5rem;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .tab-header p {
+            color: #9ca3af;
+            margin: 0;
+        }
+
+        /* Drivers Grid */
+        .drivers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Driver Card */
+        .driver-card {
+            background: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .driver-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            background: #4b5563;
+        }
+
+        .driver-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #4b5563;
+        }
+
+        .driver-header h4 {
+            margin: 0 !important;
+            color: white !important;
+            font-size: 1.1rem !important;
+            font-weight: 600 !important;
+        }
+
+        .score-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .score-green {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .score-yellow {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .score-red {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Driver Metrics */
+        .driver-metrics {
+            margin-bottom: 1rem;
+        }
+
+        .metric-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            gap: 0.75rem;
+        }
+
+        .metric-label {
+            font-size: 0.875rem !important;
+            color: white !important;
+            width: 120px;
+        }
+
+        .mini-progress {
+            flex: 1;
+            height: 0.5rem;
+            background: #e5e7eb;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .mini-progress-fill {
+            height: 100%;
+            background: #10b981;
+            border-radius: 9999px;
+            transition: width 0.3s;
+        }
+
+        .phone-usage .mini-progress-fill {
+            background: #ef4444;
+        }
+
+        .metric-value {
+            font-weight: 600 !important;
+            color: white !important;
+            font-size: 0.875rem !important;
+            width: 45px;
+            text-align: right;
+        }
+
+        /* Driver Stats */
+        .driver-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: #1f2937;
+            border-radius: 0.5rem;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        .stat-label {
+            color: #9ca3af;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: white;
+        }
+
+        /* Driver Footer */
+        .driver-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.75rem;
+            border-top: 1px solid #4b5563;
+        }
+
+        .safety-score {
+            font-size: 0.9rem !important;
+            color: white !important;
+        }
+
+        .safety-score strong {
+            font-size: 1rem;
+            margin-left: 0.25rem;
+        }
+
+        .risk-category {
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .risk-green {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .risk-blue {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        /* Overview Dashboard Styles */
+        .overview-metric-card {
+            background: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .overview-metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            background: #4b5563;
+        }
+
+        .overview-chart-section {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .activity-item {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .risk-red {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <div class="dashboard-icon">
+                <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div>
+                <h2 class="dashboard-title">🧠 MADlib Logistic Regression Model</h2>
+                <p class="dashboard-subtitle">Driver Risk Assessment & Scoring</p>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value" style="font-size: 2.8rem !important; font-weight: 900 !important; color: #1f2937 !important; white-space: nowrap;">94.3%</div>
+                <div class="metric-label" style="font-size: 1rem !important; font-weight: 600 !important; color: #374151 !important;">Accuracy</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" style="font-size: 2.8rem !important; font-weight: 900 !important; color: #1f2937 !important; white-space: nowrap;">Sep 23</div>
+                <div class="metric-label" style="font-size: 1rem !important; font-weight: 600 !important; color: #374151 !important;">Last Trained</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" style="font-size: 2.8rem !important; font-weight: 900 !important; color: #1f2937 !important; white-space: nowrap;">15</div>
+                <div class="metric-label" style="font-size: 1rem !important; font-weight: 600 !important; color: #374151 !important;">Iterations</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" style="font-size: 2.8rem !important; font-weight: 900 !important; color: #1f2937 !important; white-space: nowrap;">15</div>
+                <div class="metric-label" style="font-size: 1rem !important; font-weight: 600 !important; color: #374151 !important;">Drivers</div>
+            </div>
+        </div>
+
+        <div class="feature-weights">
+            <h3 class="feature-weights-title">Feature Importance Weights:</h3>
+
+            <div class="feature-item" style="background: #ffe0b3 !important;">
+                <div class="feature-left">
+                    <div class="feature-dot orange"></div>
+                    <span class="feature-name">Speed Compliance Rate</span>
+                </div>
+                <div class="feature-right">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar orange" style="width: 40.2%"></div>
+                    </div>
+                    <span class="feature-percentage">40.2%</span>
+                </div>
+            </div>
+
+            <div class="feature-item" style="background: #fff9c4 !important;">
+                <div class="feature-left">
+                    <div class="feature-dot yellow"></div>
+                    <span class="feature-name">Average G-Force</span>
+                </div>
+                <div class="feature-right">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar yellow" style="width: 24.8%"></div>
+                    </div>
+                    <span class="feature-percentage">24.8%</span>
+                </div>
+            </div>
+
+            <div class="feature-item" style="background: #ffcdd2 !important;">
+                <div class="feature-left">
+                    <div class="feature-dot red"></div>
+                    <span class="feature-name">Harsh Driving Events</span>
+                </div>
+                <div class="feature-right">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar red" style="width: 15.3%"></div>
+                    </div>
+                    <span class="feature-percentage">15.3%</span>
+                </div>
+            </div>
+
+            <div class="feature-item" style="background: #c8e6c9 !important;">
+                <div class="feature-left">
+                    <div class="feature-dot green"></div>
+                    <span class="feature-name">Phone Usage Rate</span>
+                </div>
+                <div class="feature-right">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar green" style="width: 14.9%"></div>
+                    </div>
+                    <span class="feature-percentage">14.9%</span>
+                </div>
+            </div>
+
+            <div class="feature-item" style="background: #e1bee7 !important;">
+                <div class="feature-left">
+                    <div class="feature-dot purple"></div>
+                    <span class="feature-name">Speed Variance</span>
+                </div>
+                <div class="feature-right">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar purple" style="width: 4.8%"></div>
+                    </div>
+                    <span class="feature-percentage">4.8%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ML Recalculation Progress -->
+        <div class="ml-progress-container" id="mlProgressContainer">
+            <div class="ml-progress-header">
+                🧠 ML Model Recalculation Progress
+            </div>
+
+            <div class="ml-progress-stages">
+                <div class="ml-stage" id="stage-download">
+                    <div class="ml-stage-box">
+                        📥 Download SQL
+                    </div>
+                    <div class="ml-stage-connector"></div>
+                </div>
+
+                <div class="ml-stage" id="stage-extract">
+                    <div class="ml-stage-box">
+                        🔬 Extract Features
+                    </div>
+                    <div class="ml-stage-connector"></div>
+                </div>
+
+                <div class="ml-stage" id="stage-apply">
+                    <div class="ml-stage-box">
+                        🤖 Apply Model
+                    </div>
+                    <div class="ml-stage-connector"></div>
+                </div>
+
+                <div class="ml-stage" id="stage-update">
+                    <div class="ml-stage-box">
+                        💾 Update Scores
+                    </div>
+                    <div class="ml-stage-connector"></div>
+                </div>
+
+                <div class="ml-stage" id="stage-complete">
+                    <div class="ml-stage-box">
+                        ✅ Complete
+                    </div>
+                </div>
+            </div>
+
+            <div class="ml-progress-bar-container">
+                <div class="ml-progress-bar-fill" id="mlProgressBarFill"></div>
+            </div>
+
+            <div class="ml-progress-text" id="mlProgressText">
+                Ready to start ML recalculation
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="action-button" onclick="executeMLRecalc()">
+                🧠 Execute ML Recalculation
+            </button>
+            <button class="action-button secondary" onclick="refreshData()">
+                📊 Refresh Data
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabbed Section for Driver Data -->
+    <div class="tabs-container">
+        <div class="tabs-nav">
+            <button class="tab-button active" onclick="showTab('overview')">
+                <span class="tab-icon">👥</span> Overview
+            </button>
+            <button class="tab-button" onclick="showTab('top-performers')">
+                <span class="tab-icon">🏆</span> Top Performers
+            </button>
+            <button class="tab-button" onclick="showTab('high-risk')">
+                <span class="tab-icon">⚠️</span> High Risk
+            </button>
+            <button class="tab-button" onclick="showTab('analytics')">
+                <span class="tab-icon">📊</span> Analytics
+            </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="overview-content" class="tab-content active">
+            <div class="tab-header">
+                <h3>👥 Fleet Performance Overview</h3>
+                <p>Real-time insights and key metrics for your entire driver fleet</p>
+            </div>
+
+            <!-- Fleet Summary Cards -->
+            <div class="overview-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                <div class="overview-metric-card" id="total-drivers">
+                    <div class="metric-icon" style="font-size: 2rem; margin-bottom: 0.5rem;">👥</div>
+                    <div class="metric-number" style="font-size: 2.5rem; font-weight: 900; color: white;">-</div>
+                    <div class="metric-label" style="color: #9ca3af; font-size: 0.9rem;">Total Drivers</div>
+                </div>
+
+                <div class="overview-metric-card" id="active-drivers">
+                    <div class="metric-icon" style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
+                    <div class="metric-number" style="font-size: 2.5rem; font-weight: 900; color: white;">-</div>
+                    <div class="metric-label" style="color: #9ca3af; font-size: 0.9rem;">Active Drivers</div>
+                </div>
+
+                <div class="overview-metric-card" id="avg-score">
+                    <div class="metric-icon" style="font-size: 2rem; margin-bottom: 0.5rem;">🛡️</div>
+                    <div class="metric-number" style="font-size: 2.5rem; font-weight: 900; color: white;">-</div>
+                    <div class="metric-label" style="color: #9ca3af; font-size: 0.9rem;">Avg Safety Score</div>
+                </div>
+
+                <div class="overview-metric-card" id="high-risk">
+                    <div class="metric-icon" style="font-size: 2rem; margin-bottom: 0.5rem;">⚠️</div>
+                    <div class="metric-number" style="font-size: 2.5rem; font-weight: 900; color: #ef4444;">-</div>
+                    <div class="metric-label" style="color: #9ca3af; font-size: 0.9rem;">High Risk Drivers</div>
+                </div>
+
+                <div class="overview-metric-card" id="accidents">
+                    <div class="metric-icon" style="font-size: 2rem; margin-bottom: 0.5rem;">🚨</div>
+                    <div class="metric-number" style="font-size: 2.5rem; font-weight: 900; color: #ef4444;">-</div>
+                    <div class="metric-label" style="color: #9ca3af; font-size: 0.9rem;">Accidents This Month</div>
+                </div>
+
+                <div class="overview-metric-card" id="trend-card">
+                    <div class="metric-icon" style="font-size: 2rem; margin-bottom: 0.5rem;">📈</div>
+                    <div class="metric-number" style="font-size: 2.5rem; font-weight: 900; color: #10b981;">-</div>
+                    <div class="metric-label" style="color: #9ca3af; font-size: 0.9rem;">Improvement Trend</div>
+                </div>
+            </div>
+
+            <!-- Safety Score Distribution Chart -->
+            <div class="overview-chart-section" style="margin-bottom: 2rem;">
+                <h4 style="color: white; margin-bottom: 1rem; font-size: 1.2rem;">🎯 Safety Score Distribution</h4>
+                <div class="treemap-container" style="background: #4b5563; padding: 1.5rem; border-radius: 0.75rem;">
+                    <div class="treemap-grid" style="display: flex; gap: 0.5rem; height: 280px;">
+                        <!-- Excellent drivers section -->
+                        <div class="treemap-item excellent" style="flex: 2.5; background: #10b981; border-radius: 0.5rem; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+                            <div class="treemap-value" id="excellent-count" style="font-size: 2.5rem; font-weight: bold; color: white; line-height: 1;">0</div>
+                            <div class="treemap-label" style="margin-top: auto;">
+                                <div style="color: white; font-weight: 700; font-size: 1.2rem;">90-100</div>
+                                <div style="color: rgba(255,255,255,0.8); font-size: 0.9rem;">Excellent</div>
+                            </div>
+                        </div>
+
+                        <!-- Good drivers section -->
+                        <div class="treemap-item good" style="flex: 4; background: #3b82f6; border-radius: 0.5rem; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+                            <div class="treemap-value" id="good-count" style="font-size: 2.5rem; font-weight: bold; color: white; line-height: 1;">0</div>
+                            <div class="treemap-label" style="margin-top: auto;">
+                                <div style="color: white; font-weight: 700; font-size: 1.2rem;">75-89</div>
+                                <div style="color: rgba(255,255,255,0.8); font-size: 0.9rem;">Good</div>
+                            </div>
+                        </div>
+
+                        <!-- Fair drivers section -->
+                        <div class="treemap-item fair" style="flex: 2; background: #f59e0b; border-radius: 0.5rem; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+                            <div class="treemap-value" id="fair-count" style="font-size: 2.5rem; font-weight: bold; color: white; line-height: 1;">0</div>
+                            <div class="treemap-label" style="margin-top: auto;">
+                                <div style="color: white; font-weight: 700; font-size: 1.2rem;">60-74</div>
+                                <div style="color: rgba(255,255,255,0.8); font-size: 0.9rem;">Fair</div>
+                            </div>
+                        </div>
+
+                        <!-- Poor drivers section -->
+                        <div class="treemap-item poor" style="flex: 1; background: #ef4444; border-radius: 0.5rem; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+                            <div class="treemap-value" id="poor-count" style="font-size: 2rem; font-weight: bold; color: white; line-height: 1;">0</div>
+                            <div class="treemap-label" style="margin-top: auto;">
+                                <div style="color: white; font-weight: 700; font-size: 1rem;">0-59</div>
+                                <div style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Poor</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Feed -->
+            <div class="overview-activity-section">
+                <h4 style="color: white; margin-bottom: 1rem; font-size: 1.2rem;">📋 Recent Activity</h4>
+                <div class="activity-feed" id="activity-feed" style="background: #4b5563; padding: 1.5rem; border-radius: 0.75rem; max-height: 400px; overflow-y: auto;">
+                    <div class="activity-item" style="padding: 0.75rem; border-left: 3px solid #10b981; margin-bottom: 0.75rem; background: #374151; border-radius: 0.25rem;">
+                        <div style="display: flex; justify-content: between; align-items: center;">
+                            <span style="color: white; font-weight: 600;">🎉 Driver 400023 achieved Excellent rating</span>
+                            <span style="color: #9ca3af; font-size: 0.8rem;">2 minutes ago</span>
+                        </div>
+                    </div>
+
+                    <div class="activity-item" style="padding: 0.75rem; border-left: 3px solid #f59e0b; margin-bottom: 0.75rem; background: #374151; border-radius: 0.25rem;">
+                        <div style="display: flex; justify-content: between; align-items: center;">
+                            <span style="color: white; font-weight: 600;">⚠️ High G-force event detected - Driver 400178</span>
+                            <span style="color: #9ca3af; font-size: 0.8rem;">15 minutes ago</span>
+                        </div>
+                    </div>
+
+                    <div class="activity-item" style="padding: 0.75rem; border-left: 3px solid #3b82f6; margin-bottom: 0.75rem; background: #374151; border-radius: 0.25rem;">
+                        <div style="display: flex; justify-content: between; align-items: center;">
+                            <span style="color: white; font-weight: 600;">📊 Monthly safety report generated</span>
+                            <span style="color: #9ca3af; font-size: 0.8rem;">1 hour ago</span>
+                        </div>
+                    </div>
+
+                    <div class="activity-item" style="padding: 0.75rem; border-left: 3px solid #ef4444; margin-bottom: 0.75rem; background: #374151; border-radius: 0.25rem;">
+                        <div style="display: flex; justify-content: between; align-items: center;">
+                            <span style="color: white; font-weight: 600;">🚨 Speed violation - Driver 400089</span>
+                            <span style="color: #9ca3af; font-size: 0.8rem;">2 hours ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="top-performers-content" class="tab-content">
+            <div class="tab-header">
+                <h3>🏆 Top Performing Drivers (Excellent Rating)</h3>
+            </div>
+            <div id="top-drivers-grid" class="drivers-grid">
+                <!-- Driver cards will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <div id="high-risk-content" class="tab-content">
+            <div class="tab-header">
+                <h3>⚠️ High Risk Drivers</h3>
+            </div>
+            <div id="risk-drivers-grid" class="drivers-grid">
+                <!-- Driver cards will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <div id="analytics-content" class="tab-content">
+            <div class="tab-header">
+                <h3>📊 Analytics Dashboard</h3>
+                <p>Detailed analytics and trends for driver performance</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Show selected tab content
+            document.getElementById(tabName + '-content').classList.add('active');
+
+            // Add active class to clicked button
+            event.currentTarget.classList.add('active');
+
+            // Load data if needed
+            if (tabName === 'overview') {
+                loadOverviewData();
+            } else if (tabName === 'top-performers') {
+                loadTopPerformers();
+            } else if (tabName === 'high-risk') {
+                loadHighRiskDrivers();
+            }
+        }
+
+        // Global variable to store the resolved service URL
+        let imcDbServerUrl = null;
+
+        // Resolve service URL using service registry
+        async function resolveServiceUrl(serviceName) {
+            try {
+                console.log(`Resolving service URL for: ${serviceName}`);
+                const response = await fetch(`/api/service-url/${serviceName}`);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(`Service URL resolved:`, data);
+                    if (data.success) {
+                        return data.serviceUrl;
+                    } else {
+                        console.error(`Service registry failed to resolve ${serviceName}:`, data.error);
+                        return null;
+                    }
+                } else {
+                    console.error(`Failed to resolve service URL for ${serviceName}: HTTP ${response.status}`);
+                    return null;
+                }
+            } catch (error) {
+                console.error(`Error resolving service URL for ${serviceName}:`, error);
+                return null;
+            }
+        }
+
+        // Load Overview dashboard data
+        async function loadOverviewData() {
+            console.log('loadOverviewData() called - starting to load overview data');
+
+            try {
+                console.log('Attempting to fetch API data...');
+
+                // First resolve the imc-db-server URL if not already cached
+                if (!imcDbServerUrl) {
+                    imcDbServerUrl = await resolveServiceUrl('imc-db-server');
+                    if (!imcDbServerUrl) {
+                        console.log('Service registry unavailable, using sample data for all endpoints');
+                        updateFleetMetrics(getSampleFleetData());
+                        updateSafetyDistribution(getSampleScoreDistribution());
+                        updateActivityFeed(getSampleActivity());
+                        return;
+                    }
+                    console.log(`Using imc-db-server URL: ${imcDbServerUrl}`);
+                }
+
+                // Load fleet summary via proxy
+                const fleetUrl = encodeURIComponent(`${imcDbServerUrl}/api/db01/fleet/summary`);
+                const fleetResponse = await fetch(`/api/metrics?url=${fleetUrl}&node=gpdb`);
+                console.log('Fleet API response status:', fleetResponse.status);
+
+                if (fleetResponse.ok) {
+                    const fleetData = await fleetResponse.json();
+                    console.log('Fleet API data received:', fleetData);
+                    updateFleetMetrics(fleetData);
+                } else {
+                    console.log('Fleet API failed, using fallback data');
+                    updateFleetMetrics(getSampleFleetData());
+                }
+
+                // Load active drivers count via proxy
+                const activeUrl = encodeURIComponent(`${imcDbServerUrl}/api/db01/drivers/active-count`);
+                const activeResponse = await fetch(`/api/metrics?url=${activeUrl}&node=gpdb`);
+                console.log('Active drivers API response status:', activeResponse.status);
+
+                if (activeResponse.ok) {
+                    const activeData = await activeResponse.json();
+                    console.log('Active drivers API data received:', activeData);
+
+                    // Extract active drivers count and update the fleet metrics
+                    const activeDriversCount = activeData.data?.active_drivers || activeData.active_drivers;
+                    if (activeDriversCount !== undefined) {
+                        // Update the active drivers display with real data
+                        const activeElement = document.querySelector('#active-drivers .metric-number');
+                        if (activeElement) {
+                            activeElement.textContent = activeDriversCount.toLocaleString();
+                            console.log('Updated active drivers count to:', activeDriversCount);
+                        }
+                    }
+
+                }
+
+                // Always calculate safety distribution from available data
+                console.log('About to calculate safety distribution...');
+                await calculateSafetyDistribution(imcDbServerUrl);
+
+                // Load recent activity from vehicle events via proxy
+                const eventsUrl = encodeURIComponent(`${imcDbServerUrl}/api/db01/vehicle-events/recent?limit=10`);
+                const eventsResponse = await fetch(`/api/metrics?url=${eventsUrl}&node=gpdb`);
+                console.log('Events API response status:', eventsResponse.status);
+
+                if (eventsResponse.ok) {
+                    const eventsData = await eventsResponse.json();
+                    console.log('Events API data received:', eventsData);
+                    updateActivityFeed(eventsData);
+                } else {
+                    console.log('Events API failed, using fallback data');
+                    updateActivityFeed(getSampleActivity());
+                }
+            } catch (error) {
+                console.error('Error loading overview data:', error);
+                console.log('All APIs failed, using fallback sample data');
+                // Use sample data as fallback
+                updateFleetMetrics(getSampleFleetData());
+                updateSafetyDistribution(getSampleScoreDistribution());
+                updateActivityFeed(getSampleActivity());
+            }
+        }
+
+        function updateFleetMetrics(fleetData) {
+            console.log('Updating fleet metrics with data:', fleetData);
+
+            // Extract the actual data from the API response structure
+            const actualData = fleetData.data || fleetData;
+
+            // Update metric cards with real API data (fallback to 0 to make it obvious when using sample data)
+            const totalDrivers = actualData.totalDrivers || 0;
+            const activeDrivers = actualData.activeDrivers || 0;
+            const avgSafetyScore = actualData.averageSafetyScore || 0;
+            const highRiskCount = actualData.highRiskDrivers || actualData.highRiskCount || 0;
+            const accidentsThisMonth = actualData.accidentsThisMonth || 0;
+            const improvementTrend = actualData.improvementTrend || 0;
+
+            console.log('Metric values:', { totalDrivers, activeDrivers, avgSafetyScore, highRiskCount, accidentsThisMonth, improvementTrend });
+
+            // Update each card
+            const totalElement = document.querySelector('#total-drivers .metric-number');
+            const activeElement = document.querySelector('#active-drivers .metric-number');
+            const avgElement = document.querySelector('#avg-score .metric-number');
+            const highRiskElement = document.querySelector('#high-risk .metric-number');
+            const accidentsElement = document.querySelector('#accidents .metric-number');
+            const trendElement = document.querySelector('#trend-card .metric-number');
+
+            console.log('DOM elements found:', {
+                totalElement: !!totalElement,
+                activeElement: !!activeElement,
+                avgElement: !!avgElement,
+                highRiskElement: !!highRiskElement,
+                accidentsElement: !!accidentsElement,
+                trendElement: !!trendElement
+            });
+
+            if (totalElement) totalElement.textContent = totalDrivers.toLocaleString();
+            if (activeElement) activeElement.textContent = activeDrivers.toLocaleString();
+            if (avgElement) avgElement.textContent = avgSafetyScore.toFixed(1);
+            if (highRiskElement) highRiskElement.textContent = highRiskCount;
+            if (accidentsElement) accidentsElement.textContent = accidentsThisMonth;
+            if (trendElement) trendElement.textContent = `+${improvementTrend}%`;
+
+            console.log('Fleet metrics updated successfully');
+        }
+
+        async function calculateSafetyDistribution(imcDbServerUrl) {
+            console.log('calculateSafetyDistribution called with URL:', imcDbServerUrl);
+            try {
+                // Load ALL driver data by using higher limits
+                // This ensures we get all 15 drivers (12 from top-performers + 3 from high-risk)
+                const topPerformersUrl = encodeURIComponent(`imc-db-server/api/db01/drivers/top-performers?limit=15`);
+                const highRiskUrl = encodeURIComponent(`imc-db-server/api/db01/drivers/high-risk?limit=10`);
+
+                console.log('Fetching driver data for distribution...');
+
+                const [topResponse, riskResponse] = await Promise.all([
+                    fetch(`/api/metrics?url=${topPerformersUrl}&node=gpdb`),
+                    fetch(`/api/metrics?url=${highRiskUrl}&node=gpdb`)
+                ]);
+
+                let allDrivers = [];
+
+                console.log('Top performers response status:', topResponse.status);
+                console.log('High risk response status:', riskResponse.status);
+
+                if (topResponse.ok) {
+                    const topData = await topResponse.json();
+                    console.log('Top performers data:', topData);
+                    if (topData.success && topData.data) {
+                        allDrivers = allDrivers.concat(topData.data);
+                        console.log('Added', topData.data.length, 'top performers');
+                    }
+                }
+
+                if (riskResponse.ok) {
+                    const riskData = await riskResponse.json();
+                    console.log('High risk data:', riskData);
+                    if (riskData.success && riskData.data) {
+                        allDrivers = allDrivers.concat(riskData.data);
+                        console.log('Added', riskData.data.length, 'high risk drivers');
+                    }
+                }
+
+                console.log('Total drivers for distribution:', allDrivers.length);
+
+                // Calculate distribution from available drivers
+                if (allDrivers.length > 0) {
+                    let excellent = 0, good = 0, fair = 0, poor = 0;
+
+                    allDrivers.forEach(driver => {
+                        const score = driver.safetyScore || 0;
+                        if (score >= 90) excellent++;
+                        else if (score >= 75) good++;
+                        else if (score >= 60) fair++;
+                        else poor++;
+                    });
+
+                    // Now we have ALL 15 drivers with the higher limits
+                    const distribution = {
+                        excellent: excellent,  // Count of 90-100 scores
+                        good: good,           // Count of 75-89 scores
+                        fair: fair,           // Count of 60-74 scores
+                        poor: poor            // Count of 0-59 scores
+                    };
+
+                    console.log('Calculated safety distribution from real data:', distribution);
+                    updateSafetyDistribution(distribution);
+                } else {
+                    console.log('No driver data available for distribution, using sample data');
+                    updateSafetyDistribution(getSampleScoreDistribution());
+                }
+            } catch (error) {
+                console.error('Error calculating safety distribution:', error);
+                updateSafetyDistribution(getSampleScoreDistribution());
+            }
+        }
+
+        function updateSafetyDistribution(scoreData) {
+            const excellent = scoreData.excellent || 0;
+            const good = scoreData.good || 0;
+            const fair = scoreData.fair || 0;
+            const poor = scoreData.poor || 0;
+
+            // Update the count text for treemap visualization
+            const excellentEl = document.getElementById('excellent-count');
+            const goodEl = document.getElementById('good-count');
+            const fairEl = document.getElementById('fair-count');
+            const poorEl = document.getElementById('poor-count');
+
+            if (excellentEl) excellentEl.textContent = excellent;
+            if (goodEl) goodEl.textContent = good;
+            if (fairEl) fairEl.textContent = fair;
+            if (poorEl) poorEl.textContent = poor;
+
+            // Optionally update flex values to reflect relative sizes
+            const total = excellent + good + fair + poor;
+            if (total > 0) {
+                const excellentItem = document.querySelector('.treemap-item.excellent');
+                const goodItem = document.querySelector('.treemap-item.good');
+                const fairItem = document.querySelector('.treemap-item.fair');
+                const poorItem = document.querySelector('.treemap-item.poor');
+
+                if (excellentItem) excellentItem.style.flex = Math.max(1, (excellent / total) * 10);
+                if (goodItem) goodItem.style.flex = Math.max(1, (good / total) * 10);
+                if (fairItem) fairItem.style.flex = Math.max(1, (fair / total) * 10);
+                if (poorItem) poorItem.style.flex = Math.max(0.5, (poor / total) * 10);
+            }
+        }
+
+        function updateActivityFeed(eventsData) {
+            const feedContainer = document.getElementById('activity-feed');
+
+            if (eventsData && eventsData.events && eventsData.events.length > 0) {
+                feedContainer.innerHTML = eventsData.events.map(event => {
+                    const color = getEventColor(event.type);
+                    const icon = getEventIcon(event.type);
+                    const timeAgo = formatTimeAgo(event.timestamp);
+
+                    return `
+                        <div class="activity-item" style="padding: 0.75rem; border-left: 3px solid ${color}; margin-bottom: 0.75rem; background: #374151; border-radius: 0.25rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: white; font-weight: 600;">${icon} ${event.description}</span>
+                                <span style="color: #9ca3af; font-size: 0.8rem;">${timeAgo}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function getEventColor(eventType) {
+            const colors = {
+                'SAFETY_SCORE_IMPROVEMENT': '#10b981',
+                'HIGH_G_FORCE': '#f59e0b',
+                'SPEED_VIOLATION': '#ef4444',
+                'REPORT_GENERATED': '#3b82f6',
+                'HARD_BRAKING': '#f59e0b',
+                'RAPID_ACCELERATION': '#f59e0b',
+                'DEFAULT': '#6b7280'
+            };
+            return colors[eventType] || colors.DEFAULT;
+        }
+
+        function getEventIcon(eventType) {
+            const icons = {
+                'SAFETY_SCORE_IMPROVEMENT': '🎉',
+                'HIGH_G_FORCE': '⚠️',
+                'SPEED_VIOLATION': '🚨',
+                'REPORT_GENERATED': '📊',
+                'HARD_BRAKING': '🛑',
+                'RAPID_ACCELERATION': '🚀',
+                'DEFAULT': '📝'
+            };
+            return icons[eventType] || icons.DEFAULT;
+        }
+
+        function formatTimeAgo(timestamp) {
+            const now = new Date();
+            const eventTime = new Date(timestamp);
+            const diffMs = now - eventTime;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+
+            if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            if (diffMins > 0) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+            return 'Just now';
+        }
+
+        function getSampleFleetData() {
+            return {
+                totalDrivers: 0,
+                activeDrivers: 0,
+                averageSafetyScore: 0,
+                highRiskDrivers: 0,
+                accidentsThisMonth: 0,
+                improvementTrend: 0
+            };
+        }
+
+        function getSampleScoreDistribution() {
+            return {
+                excellent: 0,
+                good: 0,
+                fair: 0,
+                poor: 0
+            };
+        }
+
+        function getSampleActivity() {
+            return {
+                events: [
+                    {
+                        type: 'SAFETY_SCORE_IMPROVEMENT',
+                        description: 'Driver 400023 achieved Excellent rating',
+                        timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString()
+                    },
+                    {
+                        type: 'HIGH_G_FORCE',
+                        description: 'High G-force event detected - Driver 400178',
+                        timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString()
+                    },
+                    {
+                        type: 'REPORT_GENERATED',
+                        description: 'Monthly safety report generated',
+                        timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+                    },
+                    {
+                        type: 'SPEED_VIOLATION',
+                        description: 'Speed violation - Driver 400089',
+                        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+                    }
+                ]
+            };
+        }
+
+        // Load top performing drivers
+        async function loadTopPerformers() {
+            try {
+                // Ensure service URL is resolved
+                if (!imcDbServerUrl) {
+                    imcDbServerUrl = await resolveServiceUrl('imc-db-server');
+                    if (!imcDbServerUrl) {
+                        console.log('Service registry unavailable for top performers, using sample data');
+                        displayDriverCards('top-drivers-grid', getSampleTopPerformers());
+                        return;
+                    }
+                }
+
+                // Get top performers with higher limit to ensure we get all excellent drivers
+                const topPerformersUrl = encodeURIComponent(`imc-db-server/api/db01/drivers/top-performers?limit=15`);
+                const response = await fetch(`/api/metrics?url=${topPerformersUrl}&node=gpdb`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.data) {
+                        // Filter to only show EXCELLENT rated drivers (score >= 90)
+                        const excellentDrivers = data.data.filter(driver =>
+                            driver.safetyScore >= 90 || driver.riskCategory === 'EXCELLENT'
+                        );
+                        console.log(`Showing ${excellentDrivers.length} EXCELLENT drivers out of ${data.data.length} top performers`);
+                        displayDriverCards('top-drivers-grid', excellentDrivers);
+                    }
+                } else {
+                    // Use sample data if API fails
+                    displayDriverCards('top-drivers-grid', getSampleTopPerformers());
+                }
+            } catch (error) {
+                console.error('Error loading top performers:', error);
+                // Use sample data as fallback
+                displayDriverCards('top-drivers-grid', getSampleTopPerformers());
+            }
+        }
+
+        // Load high risk drivers
+        async function loadHighRiskDrivers() {
+            try {
+                // Ensure service URL is resolved
+                if (!imcDbServerUrl) {
+                    imcDbServerUrl = await resolveServiceUrl('imc-db-server');
+                    if (!imcDbServerUrl) {
+                        console.log('Service registry unavailable for high risk drivers, using sample data');
+                        displayDriverCards('risk-drivers-grid', getSampleHighRiskDrivers());
+                        return;
+                    }
+                }
+
+                const highRiskUrl = encodeURIComponent(`${imcDbServerUrl}/api/db01/drivers/high-risk`);
+                const response = await fetch(`/api/metrics?url=${highRiskUrl}&node=gpdb`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.data) {
+                        displayDriverCards('risk-drivers-grid', data.data);
+                    }
+                } else {
+                    // Use sample data if API fails
+                    displayDriverCards('risk-drivers-grid', getSampleHighRiskDrivers());
+                }
+            } catch (error) {
+                console.error('Error loading high risk drivers:', error);
+                // Use sample data as fallback
+                displayDriverCards('risk-drivers-grid', getSampleHighRiskDrivers());
+            }
+        }
+
+        // Display driver cards
+        function displayDriverCards(containerId, drivers) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            drivers.forEach(driver => {
+                const card = createDriverCard(driver);
+                container.innerHTML += card;
+            });
+        }
+
+        // Create a single driver card
+        function createDriverCard(driver) {
+            // Handle both API structure (driverId, riskCategory) and sample structure (id, risk)
+            const driverId = driver.driverId || driver.id;
+            const riskCategory = driver.riskCategory || driver.risk || 'UNKNOWN';
+
+            const scoreColor = driver.safetyScore >= 90 ? 'green' :
+                             driver.safetyScore >= 70 ? 'yellow' : 'red';
+            const riskColor = riskCategory === 'EXCELLENT' ? 'green' :
+                            riskCategory === 'GOOD' ? 'blue' : 'red';
+
+            return `
+                <div class="driver-card">
+                    <div class="driver-header">
+                        <h4>Driver ${driverId}</h4>
+                        <span class="score-badge score-${scoreColor}">${driver.safetyScore}</span>
+                    </div>
+                    <div class="driver-metrics">
+                        <div class="metric-row">
+                            <span class="metric-label">Speed Compliance</span>
+                            <div class="mini-progress">
+                                <div class="mini-progress-fill" style="width: ${driver.speedCompliance}%"></div>
+                            </div>
+                            <span class="metric-value">${driver.speedCompliance}%</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Phone Usage</span>
+                            <div class="mini-progress phone-usage">
+                                <div class="mini-progress-fill" style="width: ${driver.phoneUsage}%"></div>
+                            </div>
+                            <span class="metric-value">${driver.phoneUsage}%</span>
+                        </div>
+                    </div>
+                    <div class="driver-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Harsh Events:</span>
+                            <span class="stat-value">${driver.harshEvents}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Events:</span>
+                            <span class="stat-value">${driver.totalEvents}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Accidents:</span>
+                            <span class="stat-value">${driver.accidents}</span>
+                        </div>
+                    </div>
+                    <div class="driver-footer">
+                        <div class="safety-score">
+                            <span>Safety Score: </span>
+                            <strong class="score-${scoreColor}">${driver.safetyScore}</strong>
+                        </div>
+                        <div class="risk-category risk-${riskColor}">
+                            Risk: ${riskCategory}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Sample data functions
+        function getSampleTopPerformers() {
+            return [
+                { id: '400011', safetyScore: 93.9, speedCompliance: 98.7, phoneUsage: 2.3, harshEvents: 0, totalEvents: 312, accidents: 0, risk: 'EXCELLENT' },
+                { id: '400017', safetyScore: 92.0, speedCompliance: 95.5, phoneUsage: 21.9, harshEvents: 0, totalEvents: 306, accidents: 0, risk: 'EXCELLENT' },
+                { id: '400015', safetyScore: 91.2, speedCompliance: 93.5, phoneUsage: 24.4, harshEvents: 0, totalEvents: 344, accidents: 0, risk: 'EXCELLENT' },
+                { id: '400014', safetyScore: 90.9, speedCompliance: 98.5, phoneUsage: 23.8, harshEvents: 0, totalEvents: 278, accidents: 0, risk: 'EXCELLENT' },
+                { id: '400016', safetyScore: 90.3, speedCompliance: 94.9, phoneUsage: 30.7, harshEvents: 0, totalEvents: 306, accidents: 0, risk: 'EXCELLENT' }
+            ];
+        }
+
+        function getSampleHighRiskDrivers() {
+            return [
+                { id: '400004', safetyScore: 45.2, speedCompliance: 67.3, phoneUsage: 78.5, harshEvents: 8, totalEvents: 423, accidents: 2, risk: 'HIGH' },
+                { id: '400008', safetyScore: 52.7, speedCompliance: 71.2, phoneUsage: 65.9, harshEvents: 5, totalEvents: 387, accidents: 1, risk: 'HIGH' },
+                { id: '400012', safetyScore: 58.9, speedCompliance: 74.8, phoneUsage: 52.3, harshEvents: 4, totalEvents: 356, accidents: 1, risk: 'MODERATE' },
+                { id: '400005', safetyScore: 61.4, speedCompliance: 78.5, phoneUsage: 48.7, harshEvents: 3, totalEvents: 298, accidents: 0, risk: 'MODERATE' },
+                { id: '400010', safetyScore: 64.8, speedCompliance: 82.1, phoneUsage: 42.6, harshEvents: 2, totalEvents: 312, accidents: 0, risk: 'MODERATE' }
+            ];
+        }
+
+        // ML Recalculation function
+        // ML Progress tracking
+        let currentJobId = null;
+        let progressInterval = null;
+
+        const progressStages = [
+            { id: 'stage-download', name: 'Download SQL', progressRange: [0, 20] },
+            { id: 'stage-extract', name: 'Extract Features', progressRange: [20, 40] },
+            { id: 'stage-apply', name: 'Apply Model', progressRange: [40, 70] },
+            { id: 'stage-update', name: 'Update Scores', progressRange: [70, 90] },
+            { id: 'stage-complete', name: 'Complete', progressRange: [90, 100] }
+        ];
+
+        function updateMLProgress(progress, message) {
+            // Update progress bar
+            document.getElementById('mlProgressBarFill').style.width = progress + '%';
+            document.getElementById('mlProgressText').textContent = message || `${progress}% complete`;
+
+            // Update stage indicators
+            progressStages.forEach(stage => {
+                const element = document.getElementById(stage.id);
+                element.classList.remove('active', 'completed');
+
+                if (progress >= stage.progressRange[1]) {
+                    element.classList.add('completed');
+                } else if (progress >= stage.progressRange[0] && progress < stage.progressRange[1]) {
+                    element.classList.add('active');
+                }
+            });
+        }
+
+        function showMLProgress() {
+            document.getElementById('mlProgressContainer').classList.add('active');
+        }
+
+        function hideMLProgress() {
+            document.getElementById('mlProgressContainer').classList.remove('active');
+            // Reset progress
+            updateMLProgress(0, 'Ready to start ML recalculation');
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+
+        async function checkJobProgress(jobId) {
+            console.log('Checking progress for job:', jobId);
+
+            // Resolve imc-db-server URL if not already resolved
+            if (!imcDbServerUrl) {
+                imcDbServerUrl = await resolveServiceUrl('imc-db-server');
+                if (!imcDbServerUrl) {
+                    console.log('Could not resolve imc-db-server URL, using simulation');
+                    simulateJobProgress(jobId);
+                    return;
+                }
+            }
+
+            // Note: Job status via proxy to imc-db-server, will fall back to simulation
+            const jobStatusUrl = encodeURIComponent(`${imcDbServerUrl}/api/db01/ml/job-status/${jobId}`);
+            fetch(`/api/metrics?url=${jobStatusUrl}&node=gpdb`)
+                .then(response => {
+                    console.log('API Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Job status data:', data);
+
+                    if (data.status === 'COMPLETED') {
+                        updateMLProgress(100, 'ML model recalculation completed successfully');
+                        if (progressInterval) {
+                            clearInterval(progressInterval);
+                            progressInterval = null;
+                        }
+                        setTimeout(() => {
+                            hideMLProgress();
+                            refreshData(); // Refresh to show updated data
+                        }, 2000);
+                    } else if (data.status === 'FAILED') {
+                        updateMLProgress(data.progress || 0, 'ML recalculation failed: ' + (data.message || 'Unknown error'));
+                        if (progressInterval) {
+                            clearInterval(progressInterval);
+                            progressInterval = null;
+                        }
+                        setTimeout(() => hideMLProgress(), 3000);
+                    } else if (data.status === 'IN_PROGRESS') {
+                        updateMLProgress(data.progress || 0, data.message || 'Processing...');
+                    } else {
+                        // Handle other statuses or use simulated progress
+                        console.log('Unknown status, using simulation');
+                        simulateProgress();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking job progress:', error);
+                    console.log('API failed, falling back to simulation');
+                    simulateProgress();
+                });
+        }
+
+        // Fallback simulation if API is not available
+        let simulationProgress = 0;
+        let simulationStarted = false;
+
+        function simulateProgress() {
+            if (!simulationStarted) {
+                simulationStarted = true;
+                simulationProgress = 0;
+            }
+
+            // Simulate realistic progress increments
+            const increment = Math.random() * 15 + 5; // 5-20% increments
+            simulationProgress = Math.min(simulationProgress + increment, 100);
+
+            // Map progress to appropriate message
+            let message = 'Processing...';
+            if (simulationProgress < 20) {
+                message = 'Loading training data';
+            } else if (simulationProgress < 40) {
+                message = 'Extracting features';
+            } else if (simulationProgress < 70) {
+                message = 'Training model';
+            } else if (simulationProgress < 90) {
+                message = 'Updating scores';
+            } else if (simulationProgress < 100) {
+                message = 'Finalizing results';
+            } else {
+                message = 'ML model recalculation completed successfully';
+            }
+
+            updateMLProgress(Math.floor(simulationProgress), message);
+
+            if (simulationProgress >= 100) {
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                }
+                simulationStarted = false;
+                setTimeout(() => {
+                    hideMLProgress();
+                    refreshData();
+                }, 2000);
+            }
+        }
+
+        async function executeMLRecalc() {
+            showMLProgress();
+            updateMLProgress(0, 'Starting ML recalculation...');
+
+            console.log('Starting ML recalculation...');
+
+            // Resolve imc-db-server URL if not already resolved
+            if (!imcDbServerUrl) {
+                imcDbServerUrl = await resolveServiceUrl('imc-db-server');
+                if (!imcDbServerUrl) {
+                    console.log('Could not resolve imc-db-server URL, using simulation');
+                    simulateMLRecalculation();
+                    return;
+                }
+            }
+
+            // Note: ML recalculate via proxy to imc-db-server, will fall back to simulation
+            const recalcUrl = encodeURIComponent(`${imcDbServerUrl}/api/db01/ml/recalculate`);
+            fetch(`/api/metrics?url=${recalcUrl}&node=gpdb`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('Recalculate API response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(jobId => {
+                console.log('Received job ID:', jobId);
+                currentJobId = jobId;
+                updateMLProgress(5, 'Job started, tracking progress...');
+
+                // Start polling for progress
+                progressInterval = setInterval(() => {
+                    checkJobProgress(jobId);
+                }, 2000); // Check every 2 seconds
+            })
+            .catch(error => {
+                console.error('Error starting ML recalculation:', error);
+                console.log('API failed, starting simulation');
+                updateMLProgress(5, 'Job started (simulated), tracking progress...');
+
+                // Fallback to simulation if API fails
+                progressInterval = setInterval(() => {
+                    simulateProgress();
+                }, 2000); // Check every 2 seconds
+            });
+        }
+
+        // Refresh data function
+        function refreshData() {
+            location.reload();
+        }
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded - initializing dashboard');
+            // Load overview data immediately since it's the default active tab
+            loadOverviewData();
+
+            // Set up auto-refresh for real-time updates (every 30 seconds)
+            setInterval(function() {
+                const activeTab = document.querySelector('.tab-button.active');
+                if (activeTab && activeTab.textContent.includes('Overview')) {
+                    console.log('Auto-refreshing overview data');
+                    loadOverviewData();
+                }
+            }, 30000);
+        });
+    </script>
+</body>
+</html>

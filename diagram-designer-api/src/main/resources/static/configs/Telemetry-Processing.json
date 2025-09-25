@@ -405,12 +405,9 @@
           "particles": {
             "enabled": true,
             "speed": 1.5,
-            "density": 150,
+            "density": 100,
             "color": "#3498db",
-            "size": 8,
-            "text": "ANALYTICS",
-            "textColor": "#ffffff",
-            "fontSize": 10,
+            "size": 6,
             "count": 4,
             "direction": "target"
           }
@@ -425,10 +422,10 @@
           "particles": {
             "enabled": true,
             "speed": 1.5,
-            "density": 50,
-            "color": "#e74c3c",
-            "size": 4,
-            "text": "ARCHIVE",
+            "density": 100,
+            "color": "#3498db",
+            "size": 8,
+            "text": "PXF",
             "textColor": "#ffffff",
             "fontSize": 8,
             "count": 4,

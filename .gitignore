@@ -51,4 +51,11 @@ temp/*.yml
 frontend/public/diagram-config.json
 configs/Telemetry-Processing.json
 configs/IMC-chatbot.json
+configs/details/*
+!configs/details/TEMPLATE.json
+# Also ignore in static resources
+diagram-designer-api/src/main/resources/static/configs/Telemetry-Processing.json
+diagram-designer-api/src/main/resources/static/configs/IMC-chatbot.json
+diagram-designer-api/src/main/resources/static/configs/details/*
+!diagram-designer-api/src/main/resources/static/configs/details/TEMPLATE.json
 diagram-designer-api/target

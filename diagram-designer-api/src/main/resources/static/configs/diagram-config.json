@@ -1,0 +1,209 @@
+{
+  "config": {
+    "layout": "horizontal",
+    "updateInterval": 30000,
+    "title": "System Architecture Diagram",
+    "nodeGlow": {
+      "enabled": true,
+      "intensity": 8,
+      "spread": 12
+    }
+  },
+  "nodes": [
+    {
+      "name": "WebServer-01",
+      "displayName": "Web Server",
+      "description": "Handles HTTP requests from clients and serves static content.",
+      "icon": "fas fa-server",
+      "position": { "x": 100, "y": 200 },
+      "circleColor": "#3498db",
+      "url": "https://webserver-dashboard.example.com",
+      "status": {
+        "url": "https://monitoring.example.com/api/v1/health/webserver",
+        "valueField": "status",
+        "upValue": "healthy",
+        "downValue": "unhealthy",
+        "updateInterval": 10000
+      },
+      "dataGrid": [
+        {
+          "label": "Traffic",
+          "url": "https://monitoring.example.com/api/v1/webtraffic",
+          "valueField": "requestsPerSecond"
+        },
+        {
+          "label": "CPU Utilization",
+          "url": "https://metrics.example.com/api/v1/metrics",
+          "valueField": "cpuUtilization"
+        }
+      ],
+      "connectTo": [],
+      "lineType": "dashed",
+      "lineColor": "#3498db",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 2,
+        "density": 150,
+        "color": "#3498db",
+        "count": 5,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 1
+      }
+    },
+    {
+      "name": "Data Exchange",
+      "displayName": "RabbitMQ",
+      "description": "Captures Streaming Data.",
+      "icon": "/assets/icons/RabbitMQ.svg", 
+      "position": { "x": 400, "y": 200 },
+      "circleColor": "#76D72A",
+      "url": "https://rabbitmq-management.example.com",
+      "status": {
+        "url": "https://rabbitmq.example.com/api/overview",
+        "valueField": "node",
+        "upValue": "running",
+        "downValue": "stopped",
+        "updateInterval": 15000
+      },
+      "dataGrid": [
+        {
+          "label": "Transactions",
+                    "url": "https://api.example.com/api/v2/transactions/count",
+          "valueField": "totalTransactions"
+        },
+        {
+          "label": "Latency",
+                    "url": "https://api.example.com/api/v2/performance",
+          "valueField": "averageLatencyMs"
+        }
+      ],
+      "connectTo": [
+        {
+          "target": "WebServer-01",
+          "outputHandle": 0,
+          "inputHandle": 0
+        }
+      ],
+      "lineType": "solid",
+      "lineColor": "#76D72A",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 1.5,
+        "density": 100,
+        "color": "#F8F8F8",
+        "count": 4,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 2
+      }
+    },
+    {
+      "name": "TanzuDatalake",
+      "displayName": "Tanzu Datalake",
+      "description": "Persistent storage for all application data.",
+      "icon": "/assets/icons/hadoop.svg",
+      "position": { "x": 700, "y": 300 },
+      "circleColor": "#e74c3c",
+      "url": "https://tanzu-datalake.example.com/dashboard",
+      "status": {
+        "url": "https://datalake.example.com/api/health",
+        "valueField": "cluster_status",
+        "upValue": "active",
+        "downValue": "inactive",
+        "updateInterval": 20000
+      },
+      "dataGrid": [
+        {
+          "label": "Active Connections",
+                    "url": "https://db.example.com/db/status/connections",
+          "valueField": "activeConnections"
+        },
+        {
+          "label": "Storage Size (GB)",
+                    "url": "https://db.example.com/db/status/storage",
+          "valueField": "diskSizeGb"
+        }
+      ],
+      "connectTo": [
+        {
+          "target": "Data Exchange",
+          "outputHandle": 1,
+          "inputHandle": 0
+        }
+      ],
+      "lineType": "solid",
+      "lineColor": "#e74c3c",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 5,
+        "density": 200,
+        "color": "#F8F8F8",
+        "count": 5,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 1
+      }
+    },
+       {
+      "name": "TestItem",
+      "displayName": "Test Item",
+      "description": "Testing components.",
+      "icon": "/assets/icons/tanzu.png", 
+      "position": { "x": 700, "y": 100 },
+      "circleColor": "#76D72A",
+      "url": "https://test-environment.example.com",
+      "status": {
+        "url": "https://test.example.com/api/status",
+        "key": "test-service-key-101",
+        "valueField": "service_state",
+        "upValue": "online",
+        "downValue": "offline",
+        "updateInterval": 5000
+      },
+      "dataGrid": [
+        {
+          "label": "Transactions",
+                    "url": "https://api.example.com/api/v2/transactions/count",
+          "valueField": "totalTransactions"
+        },
+        {
+          "label": "Latency",
+                    "url": "https://api.example.com/api/v2/performance",
+          "valueField": "averageLatencyMs"
+        }
+      ],
+      "connectTo": [
+        {
+          "target": "Data Exchange",
+          "outputHandle": 0,
+          "inputHandle": 0
+        }
+      ],
+      "lineType": "solid",
+      "lineColor": "#76D72A",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 1,
+        "density": 100,
+        "color": "#F8F8F8",
+        "count": 2,
+        "direction": "target"
+      },
+      "handles": {
+        "input": 1,
+        "output": 1
+      }
+    }
+  ]
+}

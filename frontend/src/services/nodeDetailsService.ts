@@ -10,6 +10,9 @@ class NodeDetailsService {
    * Checks for /api/node-details/{nodeName} endpoint
    */
   async loadNodeDetails(nodeName: string): Promise<NodeDetailConfig | null> {
+    // Force clear cache for debugging
+    this.cache.delete(nodeName);
+
     // Check cache first
     if (this.cache.has(nodeName)) {
       return this.cache.get(nodeName)!;
@@ -35,10 +38,23 @@ class NodeDetailsService {
 
   private async fetchNodeDetails(nodeName: string): Promise<NodeDetailConfig | null> {
     try {
-      const url = buildApiUrl(`/node-details/${encodeURIComponent(nodeName)}`);
+      const timestamp = Date.now();
+      const url = buildApiUrl(`/node-details/${encodeURIComponent(nodeName)}?t=${timestamp}`);
       log.debug(`Loading node details for ${nodeName} from:`, url);
 
-      const response = await fetch(url);
+      console.log(`[DEBUG] Fetching URL: ${url}`);
+
+      const response = await fetch(url, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+
+      console.log(`[DEBUG] Response status: ${response.status}`);
+      console.log(`[DEBUG] Response headers:`, [...response.headers.entries()]);
 
       if (response.status === 404) {
         // No custom configuration found - this is expected for most nodes
@@ -50,10 +66,16 @@ class NodeDetailsService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const config = await response.json();
-      log.debug(`Loaded details for ${nodeName}:`, config);
+      const responseText = await response.text();
+      console.log(`[DEBUG] Raw response text for ${nodeName}:`, responseText.substring(0, 200) + '...');
 
-      return this.validateConfig(config);
+      const config = JSON.parse(responseText);
+      log.debug(`Loaded details for ${nodeName}:`, config);
+      console.log(`[DEBUG] Raw config for ${nodeName}:`, config);
+
+      const validated = this.validateConfig(config);
+      console.log(`[DEBUG] Validated config for ${nodeName}:`, validated);
+      return validated;
     } catch (error) {
       log.warn(`Failed to load details for node ${nodeName}:`, error);
       return null;
@@ -128,6 +150,9 @@ class NodeDetailsService {
 
 // Export singleton instance
 export const nodeDetailsService = new NodeDetailsService();
+
+// Make it available globally for debugging
+(window as any).nodeDetailsService = nodeDetailsService;
 
 // Example node detail configurations for reference
 export const exampleNodeDetails: Record<string, NodeDetailConfig> = {

@@ -1,0 +1,81 @@
+{
+  "_comment": "This is a template file for creating node detail configurations. Copy this file and rename it to match your node name (e.g., MyService.json)",
+  "title": "Service Name",
+  "description": "Brief description of what this service does",
+  "sections": [
+    {
+      "title": "📊 Metrics",
+      "type": "metrics",
+      "icon": "📊",
+      "content": "<div class=\"grid grid-cols-2 gap-4\"><div class=\"bg-blue-50 p-3 rounded border-l-4 border-blue-500\"><div class=\"text-blue-600 font-semibold\">Requests/sec</div><div class=\"text-2xl font-bold\">1,234</div></div><div class=\"bg-green-50 p-3 rounded border-l-4 border-green-500\"><div class=\"text-green-600 font-semibold\">Response Time</div><div class=\"text-2xl font-bold\">45ms</div></div></div>"
+    },
+    {
+      "title": "🔧 Configuration",
+      "type": "info",
+      "icon": "⚙️",
+      "content": "<div class=\"space-y-2\"><div><strong>Version:</strong> 1.0.0</div><div><strong>Environment:</strong> Production</div><div><strong>Instances:</strong> 3</div></div>"
+    },
+    {
+      "title": "🔄 Status",
+      "type": "status",
+      "icon": "🔄",
+      "content": "<div class=\"flex items-center p-3 bg-green-50 rounded\"><div class=\"w-3 h-3 bg-green-500 rounded-full mr-2\"></div><span class=\"font-medium\">Service: Healthy</span></div>"
+    },
+    {
+      "title": "📝 Recent Logs",
+      "type": "logs",
+      "icon": "📝",
+      "content": "<div class=\"bg-gray-900 text-green-300 p-3 rounded font-mono text-sm max-h-32 overflow-y-auto\"><div><span class=\"text-gray-400\">[13:34:50]</span> Service started successfully</div><div><span class=\"text-gray-400\">[13:34:49]</span> Configuration loaded</div><div><span class=\"text-gray-400\">[13:34:48]</span> Database connection established</div></div>"
+    },
+    {
+      "title": "🎯 Custom Content",
+      "type": "custom",
+      "icon": "🎯",
+      "content": "<div class=\"p-4 bg-blue-50 rounded-lg\"><h4 class=\"font-semibold text-blue-800 mb-2\">Custom Section</h4><p class=\"text-blue-700\">You can add any custom HTML content here. Use Tailwind CSS classes for styling.</p></div>"
+    }
+  ],
+  "links": [
+    {
+      "label": "🖥️ Dashboard",
+      "url": "https://dashboard.example.com",
+      "icon": "🖥️",
+      "type": "primary"
+    },
+    {
+      "label": "📊 Metrics",
+      "url": "https://metrics.example.com",
+      "icon": "📊",
+      "type": "secondary"
+    },
+    {
+      "label": "📋 Logs",
+      "url": "https://logs.example.com",
+      "icon": "📋",
+      "type": "external"
+    }
+  ],
+  "customPage": {
+    "type": "iframe",
+    "content": "https://dashboard.example.com/embed"
+  },
+  "_instructions": {
+    "section_types": [
+      "info - Basic information with HTML content",
+      "metrics - Key performance indicators and statistics",
+      "status - Current operational status",
+      "logs - Recent log entries or activity",
+      "custom - Any custom HTML content"
+    ],
+    "link_types": [
+      "primary - Main action button (blue)",
+      "secondary - Secondary action (gray)",
+      "external - External link (green)"
+    ],
+    "customPage_types": [
+      "iframe - Embed external dashboard or page",
+      "html - Custom HTML content",
+      "markdown - Markdown content (requires parser)"
+    ],
+    "styling": "Use Tailwind CSS classes for styling HTML content"
+  }
+}

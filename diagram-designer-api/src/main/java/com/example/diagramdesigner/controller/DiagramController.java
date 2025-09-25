@@ -62,7 +62,7 @@ public class DiagramController {
                     if (configsResource.exists()) {
                         // In a JAR, we need to list resources differently
                         // For now, return a hardcoded list - this can be improved later
-                        List<String> knownFiles = List.of("diagram-config.json", "IMC-chatbot.json",
+                        List<String> knownFiles = List.of("diagram-config.json",
                                                         "Telemetry-Processing.json", "Telemetry-Processing-2.json",
                                                         "example-diagram-with-auth.json");
 
@@ -135,6 +135,20 @@ public class DiagramController {
 
                     // Read the JSON content from classpath
                     String jsonContent = new String(configResource.getInputStream().readAllBytes());
+
+                    logger.info("🔍 SPRING: Loading {} from classpath, raw content length: {}", filename, jsonContent.length());
+
+                    // Log first telegen node if present
+                    if (jsonContent.contains("telegen")) {
+                        int idx = jsonContent.indexOf("telegen");
+                        if (idx > 0) {
+                            int particleIdx = jsonContent.indexOf("particles", idx);
+                            if (particleIdx > 0 && particleIdx < idx + 500) {
+                                String snippet = jsonContent.substring(particleIdx, Math.min(particleIdx + 200, jsonContent.length()));
+                                logger.info("🔍 SPRING: Telegen particles snippet: {}", snippet);
+                            }
+                        }
+                    }
 
                     // Process variable substitutions
                     String processedContent = configurationProcessor.processVariableSubstitution(jsonContent);
