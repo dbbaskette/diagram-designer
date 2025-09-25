@@ -62,7 +62,7 @@ public class DiagramController {
                     if (configsResource.exists()) {
                         // In a JAR, we need to list resources differently
                         // For now, return a hardcoded list - this can be improved later
-                        List<String> knownFiles = List.of("diagram-config.json", "IMC-chatbot.json",
+                        List<String> knownFiles = List.of("diagram-config.json",
                                                         "Telemetry-Processing.json", "Telemetry-Processing-2.json",
                                                         "example-diagram-with-auth.json");
 

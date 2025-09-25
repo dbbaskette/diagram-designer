@@ -18,9 +18,9 @@ export const loadConfig = (): AppConfig => {
   const defaultConfig: AppConfig = {
     api: {
       // Use localhost for development, relative URLs for production (Cloud Foundry)
-      baseUrl: import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:3001' : ''),
-      metricsEndpoint: '/api/metrics',
-      healthEndpoint: '/api/health',
+      baseUrl: import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:3001' : '/api'),
+      metricsEndpoint: '/metrics',
+      healthEndpoint: '/health',
     },
     development: {
       enableMockData: import.meta.env.VITE_ENABLE_MOCK_DATA === 'true',

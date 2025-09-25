@@ -1,5 +1,6 @@
 package com.example.diagramdesigner.controller;
 
+import com.example.diagramdesigner.service.ConfigurationProcessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @RestController
@@ -21,11 +23,13 @@ public class NodeDetailsController {
 
     private final ResourceLoader resourceLoader;
     private final ObjectMapper objectMapper;
+    private final ConfigurationProcessor configurationProcessor;
 
     @Autowired
-    public NodeDetailsController(ResourceLoader resourceLoader, ObjectMapper objectMapper) {
+    public NodeDetailsController(ResourceLoader resourceLoader, ObjectMapper objectMapper, ConfigurationProcessor configurationProcessor) {
         this.resourceLoader = resourceLoader;
         this.objectMapper = objectMapper;
+        this.configurationProcessor = configurationProcessor;
     }
 
     @GetMapping("/node-details/{nodeName}")
@@ -48,13 +52,19 @@ public class NodeDetailsController {
                 return ResponseEntity.notFound().build();
             }
 
-            // Parse and return the JSON configuration
-            Map<String, Object> nodeDetails = objectMapper.readValue(
-                resource.getInputStream(),
-                Map.class
-            );
+            // Read the raw JSON content
+            String jsonContent = resource.getContentAsString(StandardCharsets.UTF_8);
+            logger.debug("Raw JSON content for {}: {}", nodeName, jsonContent.substring(0, Math.min(100, jsonContent.length())));
 
-            logger.debug("Successfully loaded details for node: {}", nodeName);
+            // Process variable substitution (including service discovery placeholders)
+            String processedJson = configurationProcessor.processVariableSubstitution(jsonContent);
+            logger.debug("Processed JSON for {}: {}", nodeName, processedJson.substring(0, Math.min(100, processedJson.length())));
+
+            // Parse the processed JSON
+            @SuppressWarnings("unchecked")
+            Map<String, Object> nodeDetails = objectMapper.readValue(processedJson, Map.class);
+
+            logger.debug("Successfully loaded and processed details for node: {}", nodeName);
             return ResponseEntity.ok(nodeDetails);
 
         } catch (IOException e) {

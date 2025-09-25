@@ -95,7 +95,7 @@ public class ConfigurationProcessor {
      * Substitute environment variables and service URLs in a string
      * Supports formats:
      * - ${VAR_NAME} and ${VAR_NAME:default_value} for environment variables
-     * - ${SERVICE-NAME} for service discovery (e.g., ${IMC-HDFS-SINK})
+     * - ${SERVICE-NAME} for service discovery (e.g., ${my-service})
      */
     private String substituteVariables(String input) {
         if (input == null || !input.contains("${")) {
@@ -111,9 +111,9 @@ public class ConfigurationProcessor {
 
             String value = null;
 
-            // Check if this looks like a service name (contains hyphens)
-            if (variableName.contains("-") && variableName.startsWith("IMC-")) {
-                // Try service discovery first
+            // Check if this looks like a service name (contains hyphens and not a typical env var)
+            if (variableName.contains("-") && !variableName.matches(".*[0-9]+.*") && variableName.length() > 3) {
+                // Try service discovery first for service-name-like variables
                 value = serviceDiscovery.discoverServiceUrl(variableName);
                 logger.debug("Service discovery for {} returned: {}", variableName, value);
             }

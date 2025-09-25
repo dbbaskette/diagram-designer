@@ -1,0 +1,218 @@
+{
+  "config": {
+    "layout": "horizontal",
+    "updateInterval": 30000,
+    "title": "Insurance Megacorp Policy Application",
+    "nodeGlow": {
+      "enabled": true,
+      "intensity": 6,
+      "spread": 10
+    }
+  },
+  "nodes": [
+    {
+      "name": "WebApp",
+      "displayName": "Web App",
+      "description": "User-facing application for policy management.",
+      "icon": "fas fa-window-maximize",
+      "position": { "x": 100, "y": 100 },
+      "circleColor": "#27ae60",
+      "dataGrid": [
+        {
+          "label": "Active Users",
+                    "url": "https://metrics.example.com/webapp/users",
+          "valueField": "activeUsers"
+        },
+        {
+          "label": "Page Views",
+                    "url": "https://metrics.example.com/webapp/views",
+          "valueField": "viewsPerMin"
+        }
+      ],
+      "connectTo": [],
+      "lineType": "solid",
+      "lineColor": "#27ae60",
+      "edgeType": "smoothstep",
+      "particles": { "enabled": false },
+      "handles": { "input": 0, "output": 1 }
+    },
+    {
+      "name": "ChatbotApp",
+      "displayName": "Chatbot App",
+      "description": "Conversational interface for policy inquiries.",
+      "icon": "fas fa-robot",
+      "position": { "x": 100, "y": 300 },
+      "circleColor": "#27ae60",
+      "dataGrid": [
+        {
+          "label": "Conversations",
+                    "url": "https://metrics.example.com/chatbot/convos",
+          "valueField": "activeConvos"
+        },
+        {
+          "label": "Queries/hr",
+                    "url": "https://metrics.example.com/chatbot/queries",
+          "valueField": "queriesPerHour"
+        }
+      ],
+      "connectTo": [],
+      "lineType": "solid",
+      "lineColor": "#27ae60",
+      "edgeType": "smoothstep",
+      "particles": { "enabled": false },
+      "handles": { "input": 0, "output": 1 }
+    },
+    {
+      "name": "PolicyMCPServer",
+      "displayName": "Policy MCP Server",
+      "description": "Core server handling policy logic and orchestration.",
+      "icon": "fas fa-server",
+      "position": { "x": 350, "y": 200 },
+      "circleColor": "#2980b9",
+      "dataGrid": [
+        {
+          "label": "API Calls",
+                    "url": "https://metrics.example.com/mcp/apicalls",
+          "valueField": "callsPerSec"
+        },
+        {
+          "label": "Avg Latency",
+                    "url": "https://metrics.example.com/mcp/latency",
+          "valueField": "avgLatencyMs"
+        }
+      ],
+      "connectTo": [
+        { "target": "WebApp", "inputHandle": 0 },
+        { "target": "ChatbotApp", "inputHandle": 1 }
+      ],
+      "lineType": "solid",
+      "lineColor": "#2980b9",
+      "edgeType": "smoothstep",
+      "particles": { "enabled": false },
+      "handles": { "input": 2, "output": 2 }
+    },
+    {
+      "name": "LargeLanguageModel",
+      "displayName": "Large Language Model (LLM)",
+      "description": "Provides natural language understanding and generation.",
+      "icon": "fas fa-brain",
+      "position": { "x": 350, "y": 400 },
+      "circleColor": "#8e44ad",
+      "dataGrid": [
+        {
+          "label": "Tokens/sec",
+                    "url": "https://metrics.example.com/llm/tokens",
+          "valueField": "tokensPerSec"
+        },
+        {
+          "label": "Model Status",
+                    "url": "https://metrics.example.com/llm/status",
+          "valueField": "status"
+        }
+      ],
+      "connectTo": [
+        { "target": "PolicyMCPServer", "outputHandle": 1, "inputHandle": 0 }
+      ],
+      "lineType": "solid",
+      "lineColor": "#8e44ad",
+      "edgeType": "smoothstep",
+      "particles": { "enabled": false },
+      "handles": { "input": 1, "output": 0 }
+    },
+    {
+      "name": "PolicyDatabase",
+      "displayName": "Policy Database",
+      "description": "Vector DB for latest and vectorized policies.",
+      "icon": "fas fa-database",
+      "position": { "x": 600, "y": 100 },
+      "circleColor": "#8e44ad",
+      "dataGrid": [
+        {
+          "label": "Vector Count",
+                    "url": "https://metrics.example.com/vectordb/count",
+          "valueField": "vectorCount"
+        },
+        {
+          "label": "Index Size",
+                    "url": "https://metrics.example.com/vectordb/size",
+          "valueField": "indexSizeGB"
+        }
+      ],
+      "connectTo": [
+        { "target": "PolicyMCPServer", "outputHandle": 0, "inputHandle": 0 },
+        { "target": "DataFlowServer", "outputHandle": 0, "inputHandle": 1 }
+      ],
+      "lineType": "solid",
+      "lineColor": "#8e44ad",
+      "edgeType": "smoothstep",
+      "particles": { "enabled": false },
+      "handles": { "input": 2, "output": 0 }
+    },
+    {
+      "name": "DataLakehouse",
+      "displayName": "Data Lakehouse",
+      "description": "Stores all historical policy data.",
+      "icon": "fas fa-warehouse",
+      "position": { "x": 950, "y": 100 },
+      "circleColor": "#16a085",
+      "dataGrid": [
+        {
+          "label": "Total Policies",
+                    "url": "https://metrics.example.com/lakehouse/policies",
+          "valueField": "policyCount"
+        },
+        {
+          "label": "Storage Used",
+                    "url": "https://metrics.example.com/lakehouse/storage",
+          "valueField": "storageTB"
+        }
+      ],
+      "connectTo": [],
+      "lineType": "dashed",
+      "lineColor": "#1abc9c",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 2,
+        "color": "#1abc9c",
+        "count": 4,
+        "direction": "source"
+      },
+      "handles": { "input": 0, "output": 1 }
+    },
+    {
+      "name": "DataFlowServer",
+      "displayName": "Data Flow Server",
+      "description": "Processes and moves data from the lakehouse.",
+      "icon": "fas fa-exchange-alt",
+      "position": { "x": 800, "y": 350 },
+      "circleColor": "#16a085",
+      "dataGrid": [
+        {
+          "label": "Jobs Running",
+                    "url": "https://metrics.example.com/dataflow/jobs",
+          "valueField": "runningJobs"
+        },
+        {
+          "label": "Data Volume",
+                    "url": "https://metrics.example.com/dataflow/volume",
+          "valueField": "volumeMBps"
+        }
+      ],
+      "connectTo": [
+        { "target": "DataLakehouse", "inputHandle": 0 }
+      ],
+      "lineType": "dashed",
+      "lineColor": "#1abc9c",
+      "edgeType": "curved",
+      "particles": {
+        "enabled": true,
+        "speed": 2,
+        "color": "#1abc9c",
+        "count": 4,
+        "direction": "source"
+      },
+      "handles": { "input": 1, "output": 1 }
+    }
+  ]
+}
