@@ -46,6 +46,10 @@ export interface DiagramNode {
     color?: string;
     count?: number;  // Number of particles per line
     direction?: 'source' | 'target'; // 'source' = particles flow out, 'target' = particles flow in
+    text?: string;        // Text that moves with particles
+    label?: string;       // Static text label on the edge
+    fontSize?: number;    // Size of the text (default: 12)
+    textColor?: string;   // Color of the text (default: white)
   };
   handles?: {
     input?: number;  // Number of input handles on the left
