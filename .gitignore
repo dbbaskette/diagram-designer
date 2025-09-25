@@ -49,7 +49,7 @@ temp/*.yml
 
 # Actual diagram configuration (contains sensitive data)
 frontend/public/diagram-config.json
-configs/Telemetry-Processing.json
+# configs/Telemetry-Processing.json  # Temporarily commented to commit text features
 configs/IMC-chatbot.json
 configs/details/*
 !configs/details/TEMPLATE.json
