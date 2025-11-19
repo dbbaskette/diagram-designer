@@ -33,8 +33,7 @@ public class MetricsProxyController {
         return ResponseEntity.ok(Map.of(
                 "status", "healthy",
                 "timestamp", System.currentTimeMillis(),
-                "service", "diagram-designer-proxy"
-        ));
+                "service", "diagram-designer-proxy"));
     }
 
     @GetMapping("/metrics")
@@ -70,16 +69,23 @@ public class MetricsProxyController {
         return metricsProxyService.proxyRequest(resolvedUrl, nodeName);
     }
 
+    @PostMapping("/metrics/batch")
+    public Mono<ResponseEntity<Map<String, Object>>> proxyMetricsBatch(
+            @RequestBody java.util.List<Map<String, String>> requests) {
+        logger.info("Received batch metrics request for {} items", requests.size());
+        return metricsProxyService.getBatchMetrics(requests)
+                .map(ResponseEntity::ok);
+    }
+
     @GetMapping("/list-diagrams")
     public ResponseEntity<Object> listDiagrams() {
         // Return a simple list of available diagram files
         // This could be expanded to scan the configs directory dynamically
         return ResponseEntity.ok(Map.of(
-                "diagrams", new String[]{
+                "diagrams", new String[] {
                         "diagram-config.json",
                         "Telemetry-Processing.json"
-                }
-        ));
+                }));
     }
 
     @GetMapping("/service-url/{serviceName}")
@@ -93,22 +99,19 @@ public class MetricsProxyController {
                 return ResponseEntity.ok(Map.of(
                         "serviceName", serviceName,
                         "serviceUrl", serviceUrl,
-                        "success", true
-                ));
+                        "success", true));
             } else {
                 return ResponseEntity.status(404).body(Map.of(
                         "serviceName", serviceName,
                         "success", false,
-                        "error", "Service not found in registry"
-                ));
+                        "error", "Service not found in registry"));
             }
         } catch (Exception e) {
             logger.error("Error resolving service URL for: {}", serviceName, e);
             return ResponseEntity.status(500).body(Map.of(
                     "serviceName", serviceName,
                     "success", false,
-                    "error", e.getMessage()
-            ));
+                    "error", e.getMessage()));
         }
     }
 
@@ -119,18 +122,15 @@ public class MetricsProxyController {
             if (vcapServices != null) {
                 return ResponseEntity.ok(Map.of(
                         "vcap_services_present", true,
-                        "vcap_services", vcapServices
-                ));
+                        "vcap_services", vcapServices));
             } else {
                 return ResponseEntity.ok(Map.of(
                         "vcap_services_present", false,
-                        "message", "VCAP_SERVICES environment variable not found"
-                ));
+                        "message", "VCAP_SERVICES environment variable not found"));
             }
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", e.getMessage()
-            ));
+                    "error", e.getMessage()));
         }
     }
 
@@ -155,7 +155,8 @@ public class MetricsProxyController {
             return false;
         }
 
-        // Generic pattern for service names: letters, numbers, hyphens, optionally followed by a path
+        // Generic pattern for service names: letters, numbers, hyphens, optionally
+        // followed by a path
         return input.matches("^[a-zA-Z0-9-]+(/.*)?$");
     }
 
@@ -197,7 +198,6 @@ public class MetricsProxyController {
         return ResponseEntity.internalServerError()
                 .body(Map.of(
                         "error", "Internal server error",
-                        "message", e.getMessage() != null ? e.getMessage() : "An unexpected error occurred"
-                ));
+                        "message", e.getMessage() != null ? e.getMessage() : "An unexpected error occurred"));
     }
 }

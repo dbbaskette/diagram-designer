@@ -195,7 +195,7 @@ WebServer → Data Exchange → TestItem
 ```json
 "icon": "/assets/icons/RabbitMQ.svg"
 "icon": "/assets/icons/hadoop.svg"
-"icon": "/assets/icons/tanzu.png"
+"icon": "/assets/icons/tanzu.webp"
 ```
 
 ## Color Examples

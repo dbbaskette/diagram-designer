@@ -5,11 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
@@ -32,7 +33,7 @@ public class MetricsProxyService {
 
     @Autowired
     public MetricsProxyService(MetricsProxyProperties properties, ObjectMapper objectMapper,
-                              AuthenticationResolver authenticationResolver) {
+            AuthenticationResolver authenticationResolver) {
         this.properties = properties;
         this.objectMapper = objectMapper;
         this.authenticationResolver = authenticationResolver;
@@ -68,6 +69,28 @@ public class MetricsProxyService {
                 .onErrorResume(this::handleError);
     }
 
+    public Mono<Map<String, Object>> getBatchMetrics(java.util.List<Map<String, String>> requests) {
+        return reactor.core.publisher.Flux.fromIterable(requests)
+                .flatMap(req -> {
+                    String url = req.get("url");
+                    String node = req.get("node");
+                    String key = req.getOrDefault("key", url); // Use URL as key if no specific key provided
+
+                    if (url == null)
+                        return Mono.empty();
+
+                    return proxyRequest(url, node)
+                            .map(response -> {
+                                Object body = response.getBody();
+                                return Map.of(key, body != null ? body : Map.of("error", "Empty response"));
+                            })
+                            .onErrorResume(e -> Mono.just(Map.of(key, Map.of("error", e.getMessage()))));
+                })
+                .collect(java.util.stream.Collectors.toMap(
+                        m -> m.keySet().iterator().next(),
+                        m -> m.values().iterator().next()));
+    }
+
     private Mono<Object> makeAuthenticatedRequest(String targetUrl) {
         return makeAuthenticatedRequest(targetUrl, null);
     }
@@ -90,7 +113,6 @@ public class MetricsProxyService {
         }
     }
 
-
     private Mono<ResponseEntity<Object>> handleError(Throwable error) {
         if (error instanceof WebClientResponseException wcre) {
             logger.warn("HTTP error from upstream service: {} {}", wcre.getStatusCode(), wcre.getMessage());
@@ -108,12 +130,12 @@ public class MetricsProxyService {
             return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(Map.of(
                             "error", "Service unavailable",
-                            "message", error.getMessage() != null ? error.getMessage() : "Network error"
-                    )));
+                            "message", error.getMessage() != null ? error.getMessage() : "Network error")));
         }
     }
 
     // Clean up expired cache entries periodically
+    @Scheduled(fixedRate = 60000) // Run every minute
     public void cleanupCache() {
         cache.entrySet().removeIf(entry -> entry.getValue().isExpired());
     }

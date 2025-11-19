@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Handle, Position } from 'reactflow';
 import type { NodeProps } from 'reactflow';
 import type { NodeData, DataGridItem } from '../types/diagram';
 import { buildMetricsUrl, log, appConfig } from '../config/appConfig';
 import NodeDetailModal, { type NodeDetailConfig } from './NodeDetailModal';
 import { nodeDetailsService } from '../services/nodeDetailsService';
+import { useMetrics } from '../context/MetricsContext';
 
 // Utility function to get nested object values by path (e.g., "measurements[0].value")
 const getNestedValue = (obj: any, path: string): any => {
@@ -20,24 +21,21 @@ const getNestedValue = (obj: any, path: string): any => {
 };
 
 // Component for individual metric rows
-const MetricRow: React.FC<{ metric: DataGridItem; nodeName: string }> = ({ metric, nodeName }) => {
+const MetricRow: React.FC<{ metric: DataGridItem; nodeName: string }> = memo(({ metric, nodeName }) => {
   const [value, setValue] = useState<string>('Loading...');
   const [error, setError] = useState<boolean>(false);
+  const { registerMetric } = useMetrics();
 
   useEffect(() => {
-    const fetchMetric = async () => {
-      try {
-        const proxyUrl = buildMetricsUrl(metric.url, nodeName);
-        log.debug(`Fetching metric for ${nodeName}:`, proxyUrl);
+    const proxyUrl = buildMetricsUrl(metric.url, nodeName);
 
-        const response = await fetch(proxyUrl);
-
-        if (response.ok) {
-          const data = await response.json();
+    const unregister = registerMetric(
+      proxyUrl,
+      nodeName,
+      (data) => {
+        try {
           const metricValue = getNestedValue(data, metric.valueField);
-
           if (metricValue !== undefined && metricValue !== null) {
-            // Format numbers nicely
             const formatted = typeof metricValue === 'number'
               ? metricValue.toLocaleString()
               : metricValue.toString();
@@ -46,16 +44,14 @@ const MetricRow: React.FC<{ metric: DataGridItem; nodeName: string }> = ({ metri
           } else {
             setValue('N/A');
             setError(true);
-            log.warn(`Field '${metric.valueField}' not found in response for ${nodeName}`);
           }
-        } else {
-          setValue('N/A');
+        } catch {
+          setValue('Err');
           setError(true);
-          log.warn(`Metric fetch failed for ${nodeName}: ${response.status}`);
         }
-      } catch (err) {
+      },
+      () => {
         if (appConfig.development.enableMockData) {
-          // Show mock data in development
           const mockValue = Math.floor(Math.random() * 1000);
           setValue(mockValue.toLocaleString());
           setError(false);
@@ -63,15 +59,11 @@ const MetricRow: React.FC<{ metric: DataGridItem; nodeName: string }> = ({ metri
           setValue('N/A');
           setError(true);
         }
-        log.error(`Metric fetch error for ${nodeName}:`, err);
       }
-    };
+    );
 
-    fetchMetric();
-    // Refresh metrics every 30 seconds
-    const interval = setInterval(fetchMetric, 30000);
-    return () => clearInterval(interval);
-  }, [metric.url, metric.valueField, nodeName]);
+    return unregister;
+  }, [metric.url, metric.valueField, nodeName, registerMetric]);
 
   return (
     <div className="diagram-node-metric-row">
@@ -81,13 +73,13 @@ const MetricRow: React.FC<{ metric: DataGridItem; nodeName: string }> = ({ metri
       </div>
     </div>
   );
-};
+});
 
-const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
+const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) => {
   // Get handle configuration from node data (allow 0 handles)
   const inputHandles = data.handles?.input !== undefined ? data.handles.input : 1;
   const outputHandles = data.handles?.output !== undefined ? data.handles.output : 1;
-  
+
   // Status monitoring state
   const [status, setStatus] = useState<'up' | 'down' | 'unknown'>('unknown');
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
@@ -97,90 +89,52 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nodeDetails, setNodeDetails] = useState<NodeDetailConfig | undefined>(undefined);
   const [detailsLoading, setDetailsLoading] = useState(false);
-  
-  // Status checking function
-  const checkStatus = async () => {
-    if (!data.status) return;
-    
-    try {
-      log.debug(`Checking status for ${data.name}:`, {
-        url: data.status.url,
-        valueField: data.status.valueField,
-        upValue: data.status.upValue,
-        downValue: data.status.downValue
-      });
 
-      // Use the metrics proxy for all requests
-      const proxyUrl = buildMetricsUrl(data.status.url, data.name);
-      log.debug(`Using proxy URL: ${proxyUrl}`);
+  const { registerMetric } = useMetrics();
 
-      const response = await fetch(proxyUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      log.debug(`Response status: ${response.status} for ${data.name}`);
-
-      if (response.ok) {
-        const result = await response.json();
-        log.debug(`Response data for ${data.name}:`, result);
-
-        const statusValue = getNestedValue(result, data.status.valueField);
-        log.debug(`Extracted status value: "${statusValue}" for ${data.name}`);
-
-        if (statusValue === data.status.upValue) {
-          setStatus('up');
-          setStatusError(null);
-        } else if (statusValue === data.status.downValue) {
-          setStatus('down');
-          setStatusError(null);
-        } else {
-          setStatus('unknown');
-          setStatusError(`Unexpected value: ${statusValue}`);
-        }
-      } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        log.warn(`HTTP ${response.status} for ${data.name}:`, errorData);
-
-        if (appConfig.development.enableMockData) {
-          // Mock as UP for development
-          setStatus('up');
-          setStatusError('Mocked (dev mode)');
-        } else {
-          setStatus('unknown');
-          setStatusError(`HTTP ${response.status}: ${errorData.error || 'Service error'}`);
-        }
-      }
-    } catch (error) {
-      log.error(`Status check failed for ${data.name}:`, error);
-
-      if (appConfig.development.enableMockData) {
-        // Mock as UP for development
-        setStatus('up');
-        setStatusError('Mocked (network error)');
-      } else {
-        setStatus('unknown');
-        setStatusError(error instanceof Error ? error.message : 'Network error');
-      }
-    }
-    
-    setLastChecked(new Date());
-  };
-  
-  // Set up status checking interval
+  // Status checking using batch system
   useEffect(() => {
-    if (data.status) {
-      // Initial check
-      checkStatus();
-      
-      // Set up interval
-      const interval = setInterval(checkStatus, data.status.updateInterval);
-      
-      return () => clearInterval(interval);
-    }
-  }, [data.status]);
+    if (!data.status) return;
+
+    const proxyUrl = buildMetricsUrl(data.status.url, data.name);
+
+    const unregister = registerMetric(
+      proxyUrl,
+      data.name,
+      (result) => {
+        setLastChecked(new Date());
+        try {
+          const statusValue = getNestedValue(result, data.status!.valueField);
+
+          if (statusValue === data.status!.upValue) {
+            setStatus('up');
+            setStatusError(null);
+          } else if (statusValue === data.status!.downValue) {
+            setStatus('down');
+            setStatusError(null);
+          } else {
+            setStatus('unknown');
+            setStatusError(`Unexpected: ${statusValue}`);
+          }
+        } catch {
+          setStatus('unknown');
+          setStatusError('Parse error');
+        }
+      },
+      () => {
+        setLastChecked(new Date());
+        if (appConfig.development.enableMockData) {
+          setStatus('up');
+          setStatusError('Mocked (dev)');
+        } else {
+          setStatus('unknown');
+          setStatusError('Network error');
+        }
+      }
+    );
+
+    return unregister;
+  }, [data.status, data.name, registerMetric]);
 
   // Modal functionality
   const handleNodeClick = async (event: React.MouseEvent) => {
@@ -229,7 +183,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
   const inputHandleElements = [];
   for (let i = 0; i < inputHandles; i++) {
     let topPosition = '50%'; // Default center position
-    
+
     if (inputHandles > 1) {
       // Spread handles vertically when multiple
       const spacing = 30; // pixels between handles
@@ -238,7 +192,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
       const currentOffset = startOffset + (i * spacing);
       topPosition = `calc(50% + ${currentOffset}px)`;
     }
-    
+
     inputHandleElements.push(
       <Handle
         key={`input-${i}`}
@@ -256,12 +210,12 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
       />
     );
   }
-  
+
   // Generate output handles
   const outputHandleElements = [];
   for (let i = 0; i < outputHandles; i++) {
     let topPosition = '50%'; // Default center position
-    
+
     if (outputHandles > 1) {
       // Spread handles vertically when multiple
       const spacing = 30; // pixels between handles
@@ -270,7 +224,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
       const currentOffset = startOffset + (i * spacing);
       topPosition = `calc(50% + ${currentOffset}px)`;
     }
-    
+
     outputHandleElements.push(
       <Handle
         key={`output-${i}`}
@@ -288,19 +242,19 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
       />
     );
   }
-  
+
   return (
     <>
       {/* Input Handles - Configurable number */}
       {inputHandleElements}
 
       {/* Main Node Circle */}
-      <div 
+      <div
         className={`diagram-node healthy ${data.url ? 'cursor-pointer hover:opacity-80' : ''}`}
         style={{
           borderColor: data.circleColor || '#22c55e',
-          filter: data.config.nodeGlow?.enabled 
-            ? `drop-shadow(0 0 ${data.config.nodeGlow.spread}px ${data.circleColor || '#22c55e'})` 
+          filter: data.config.nodeGlow?.enabled
+            ? `drop-shadow(0 0 ${data.config.nodeGlow.spread}px ${data.circleColor || '#22c55e'})`
             : undefined
         }}
         onClick={handleNodeClick}
@@ -309,8 +263,8 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
         {/* Node Icon - Only icon inside circle */}
         <div className="diagram-node-icon">
           {data.icon.startsWith('/') || data.icon.startsWith('http') ? (
-            <img 
-              src={data.icon} 
+            <img
+              src={data.icon}
               alt={data.displayName}
               className="w-12 h-12 object-contain"
             />
@@ -323,12 +277,11 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
 
         {/* Status Indicator */}
         <div className="absolute -top-2 -right-2">
-          <div 
-            className={`w-4 h-4 rounded-full border-2 border-gray-900 ${
-              status === 'up' ? 'bg-green-500' : 
-              status === 'down' ? 'bg-red-500' : 
-              'bg-yellow-500'
-            }`}
+          <div
+            className={`w-4 h-4 rounded-full border-2 border-gray-900 ${status === 'up' ? 'bg-green-500' :
+              status === 'down' ? 'bg-red-500' :
+                'bg-yellow-500'
+              }`}
             title={`Status: ${status}${statusError ? ` (${statusError})` : ''}${lastChecked ? ` (Last checked: ${lastChecked.toLocaleTimeString()})` : ''}`}
           ></div>
         </div>
@@ -366,6 +319,6 @@ const CustomNode: React.FC<NodeProps<NodeData>> = ({ data, xPos, yPos }) => {
       />
     </>
   );
-};
+});
 
 export default CustomNode;

@@ -67,3 +67,9 @@ metrics:
   proxy:
     timeout-ms: 5000
     cache-ttl-ms: 60000
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false

@@ -22,7 +22,8 @@ import java.util.stream.Stream;
  * This controller handles:
  * - Listing available diagram configuration files
  * - Serving individual diagram JSON files with variable substitution
- * - Supporting both filesystem (development) and classpath (deployment) resource access
+ * - Supporting both filesystem (development) and classpath (deployment)
+ * resource access
  */
 @RestController
 @RequestMapping("/api")
@@ -63,8 +64,8 @@ public class DiagramController {
                         // In a JAR, we need to list resources differently
                         // For now, return a hardcoded list - this can be improved later
                         List<String> knownFiles = List.of("diagram-config.json",
-                                                        "Telemetry-Processing.json", "Telemetry-Processing-2.json",
-                                                        "example-diagram-with-auth.json");
+                                "Telemetry-Processing.json", "Telemetry-Processing-2.json",
+                                "example-diagram-with-auth.json");
 
                         // Filter to only include files that actually exist
                         List<String> existingFiles = knownFiles.stream()
@@ -90,9 +91,39 @@ public class DiagramController {
     }
 
     @GetMapping("/diagrams/{filename:.+\\.json}")
+    @SuppressWarnings("null")
     public ResponseEntity<String> getDiagramConfig(@PathVariable String filename) {
         try {
             Path configsDir = findConfigsDirectory();
+
+            // Check cache first
+            if (configCache.containsKey(filename)) {
+                CachedConfig cached = configCache.get(filename);
+                // For filesystem, check if file has changed
+                if (configsDir != null) {
+                    Path configPath = configsDir.resolve(filename);
+                    try {
+                        long lastModified = Files.getLastModifiedTime(configPath).toMillis();
+                        if (lastModified <= cached.lastModified) {
+                            logger.debug("Serving {} from cache", filename);
+                            return ResponseEntity.ok()
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .body(cached.content);
+                        }
+                    } catch (IOException e) {
+                        // Ignore and reload
+                    }
+                } else {
+                    // Classpath resources don't change at runtime, so cache is always valid
+                    logger.debug("Serving {} from cache (classpath)", filename);
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(cached.content);
+                }
+            }
+
+            String processedContent;
+            long lastModified = System.currentTimeMillis();
 
             if (configsDir != null) {
                 // File system approach (local development)
@@ -108,22 +139,21 @@ public class DiagramController {
                 Path normalizedConfigsDir = configsDir.toAbsolutePath().normalize();
 
                 if (!resolvedPath.startsWith(normalizedConfigsDir)) {
-                    logger.warn("Security violation: Attempted to access file outside configs directory: {}", resolvedPath);
+                    logger.warn("Security violation: Attempted to access file outside configs directory: {}",
+                            resolvedPath);
                     return ResponseEntity.badRequest().build();
                 }
 
                 // Read the JSON content
                 String jsonContent = Files.readString(configPath);
+                lastModified = Files.getLastModifiedTime(configPath).toMillis();
 
                 // Process variable substitutions
-                String processedContent = configurationProcessor.processVariableSubstitution(jsonContent);
+                processedContent = configurationProcessor.processVariableSubstitution(jsonContent);
 
                 logger.debug("Served diagram config: {} from {} (processed {} characters)",
-                            filename, configsDir, processedContent.length());
+                        filename, configsDir, processedContent.length());
 
-                return ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(processedContent);
             } else {
                 // Classpath approach (JAR deployment)
                 try {
@@ -136,7 +166,8 @@ public class DiagramController {
                     // Read the JSON content from classpath
                     String jsonContent = new String(configResource.getInputStream().readAllBytes());
 
-                    logger.info("🔍 SPRING: Loading {} from classpath, raw content length: {}", filename, jsonContent.length());
+                    logger.info("🔍 SPRING: Loading {} from classpath, raw content length: {}", filename,
+                            jsonContent.length());
 
                     // Log first telegen node if present
                     if (jsonContent.contains("telegen")) {
@@ -144,27 +175,31 @@ public class DiagramController {
                         if (idx > 0) {
                             int particleIdx = jsonContent.indexOf("particles", idx);
                             if (particleIdx > 0 && particleIdx < idx + 500) {
-                                String snippet = jsonContent.substring(particleIdx, Math.min(particleIdx + 200, jsonContent.length()));
+                                String snippet = jsonContent.substring(particleIdx,
+                                        Math.min(particleIdx + 200, jsonContent.length()));
                                 logger.info("🔍 SPRING: Telegen particles snippet: {}", snippet);
                             }
                         }
                     }
 
                     // Process variable substitutions
-                    String processedContent = configurationProcessor.processVariableSubstitution(jsonContent);
+                    processedContent = configurationProcessor.processVariableSubstitution(jsonContent);
 
                     logger.debug("Served diagram config: {} from classpath (processed {} characters)",
-                                filename, processedContent.length());
-
-                    return ResponseEntity.ok()
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body(processedContent);
+                            filename, processedContent.length());
 
                 } catch (Exception e) {
                     logger.debug("Error accessing config from classpath: {}", e.getMessage());
                     return ResponseEntity.notFound().build();
                 }
             }
+
+            // Update cache
+            configCache.put(filename, new CachedConfig(processedContent, lastModified));
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(processedContent);
 
         } catch (IOException e) {
             logger.error("Error reading diagram file: {}", filename, e);
@@ -175,15 +210,28 @@ public class DiagramController {
         }
     }
 
+    // Cache structure
+    private static class CachedConfig {
+        final String content;
+        final long lastModified;
+
+        CachedConfig(String content, long lastModified) {
+            this.content = content;
+            this.lastModified = lastModified;
+        }
+    }
+
+    private final java.util.Map<String, CachedConfig> configCache = new java.util.concurrent.ConcurrentHashMap<>();
+
     /**
      * Find the configs directory, trying multiple possible locations
      */
     private Path findConfigsDirectory() {
         // Try different locations for configs directory
         String[] possiblePaths = {
-                "configs",           // Local development (project root)
-                "../configs",        // If running from backend/ subdirectory
-                "./configs"          // Deployment (same directory as JAR)
+                "configs", // Local development (project root)
+                "../configs", // If running from backend/ subdirectory
+                "./configs" // Deployment (same directory as JAR)
         };
 
         for (String pathStr : possiblePaths) {

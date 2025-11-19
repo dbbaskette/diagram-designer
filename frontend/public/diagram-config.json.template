@@ -134,7 +134,7 @@
       "name": "TestItem",
       "displayName": "Test Item",
       "description": "Testing components.",
-      "icon": "/assets/icons/tanzu.png",
+      "icon": "/assets/icons/tanzu.webp",
       "_iconExamples": "You can also use: '🚗', '🗄️', '⚙️', '🗃️', '📝' for emoji icons", 
       "position": { "x": 700, "y": 100 },
       "circleColor": "#76D72A",
