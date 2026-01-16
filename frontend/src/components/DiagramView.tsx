@@ -94,18 +94,6 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
             const connectionParticles = typeof connection === 'object' ? connection.particles : undefined;
             const particles = connectionParticles || node.particles;
 
-            // Debug logging - only for nodes with particles
-            if (particles?.enabled) {
-              console.log(`🔥 Edge: ${node.name} -> ${sourceId}`);
-              console.log(`🔥 Particle config:`, {
-                enabled: particles.enabled,
-                text: particles.text,
-                textColor: particles.textColor,
-                fontSize: particles.fontSize,
-                color: particles.color
-              });
-            }
-
             // Get connection-specific styling or fall back to node-level
             const connectionLineType = typeof connection === 'object' ? connection.lineType : undefined;
             const connectionLineColor = typeof connection === 'object' ? connection.lineColor : undefined;
@@ -162,8 +150,7 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
       if (pendingTemplateStr) {
         try {
           const pendingTemplate = JSON.parse(pendingTemplateStr);
-          console.log('🔍 Loading pending template:', pendingTemplate.name);
-          localStorage.removeItem('pendingTemplate'); // Clear it so it doesn't load again
+          localStorage.removeItem('pendingTemplate');
 
           setConfig(pendingTemplate.config);
           if (onConfigLoad) {
@@ -182,7 +169,6 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
 
       // If initialConfig is provided, use it directly
       if (initialConfig) {
-        console.log('🔍 Loading initial config (template/memory)');
         setConfig(initialConfig);
 
         // Notify parent component that config is loaded
@@ -198,10 +184,6 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
       try {
         const response = await fetch(`/api/diagrams/${selectedDiagram}`);
         const data: DiagramConfig = await response.json();
-        console.log(`🔍 Loaded diagram: ${selectedDiagram} at ${new Date().toISOString()}`);
-        console.log(`🔍 Full telegen node:`, data.nodes.find(n => n.name === 'telegen'));
-        console.log(`🔍 Sample node particles:`, data.nodes.find(n => n.name === 'telegen')?.particles);
-        console.log(`🔍 All nodes with particles:`, data.nodes.filter(n => n.particles?.enabled).map(n => ({ name: n.name, particles: n.particles })));
         setConfig(data);
 
         // Notify parent component that config is loaded
@@ -240,7 +222,6 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
       });
 
       localStorage.setItem(savedPositionsKey, JSON.stringify(currentPositions));
-      console.log(`Saved positions for ${selectedDiagram}:`, currentPositions);
     }
   }, [onNodesChange, selectedDiagram]);
 

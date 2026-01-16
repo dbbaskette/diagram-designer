@@ -132,8 +132,6 @@ const Settings: React.FC<SettingsProps> = ({ selectedDiagram, onSaveLayout, show
   };
 
   const handleTemplateSelect = (template: any) => {
-    console.log('Template selected in Settings:', template);
-    // Store template in localStorage temporarily for the navigation
     localStorage.setItem('pendingTemplate', JSON.stringify(template));
     setIsTemplateModalOpen(false);
     // Navigate back to diagram view using React Router

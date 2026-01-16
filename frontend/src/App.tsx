@@ -13,10 +13,7 @@ const queryClient = new QueryClient();
 // Create context for sharing configuration
 const ConfigContext = createContext<DiagramConfig | null>(null);
 
-export const useConfig = () => {
-  const context = useContext(ConfigContext);
-  return context;
-};
+export const useConfig = () => useContext(ConfigContext);
 
 function DiagramSelector({ selectedDiagram, onDiagramChange }: { selectedDiagram: string; onDiagramChange: (diagram: string) => void }) {
   const [availableDiagrams, setAvailableDiagrams] = useState<string[]>([]);
@@ -32,8 +29,8 @@ function DiagramSelector({ selectedDiagram, onDiagramChange }: { selectedDiagram
             setAvailableDiagrams(fileList);
             return;
           }
-        } catch (error) {
-          console.log('API endpoint not available, falling back to individual checks');
+        } catch {
+          // API not available, fall back to individual checks
         }
 
         // Fallback: Check for common diagram files
@@ -262,7 +259,6 @@ function App() {
         }
 
         if (availableDiagrams.length > 0 && !availableDiagrams.includes(selectedDiagram)) {
-          console.log(`Selected diagram "${selectedDiagram}" no longer exists, switching to first available`);
           const newSelection = availableDiagrams[0];
           setSelectedDiagram(newSelection);
           localStorage.setItem('selectedDiagram', newSelection);
@@ -326,8 +322,6 @@ function App() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      console.log('Layout saved with positions:', currentPositions);
-
       return true;
     } catch (error) {
       console.error('Failed to save layout:', error);
@@ -336,7 +330,6 @@ function App() {
   };
 
   const handleSelectTemplate = (template: any) => {
-    console.log('Selected template:', template.name);
     setTemplateConfig(template.config);
     // We don't change selectedDiagram string because we are in "unsaved" mode
     // But DiagramView will prioritize templateConfig

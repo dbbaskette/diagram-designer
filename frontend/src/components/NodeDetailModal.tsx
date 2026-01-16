@@ -192,6 +192,7 @@ const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
   nodeData,
   nodeDetails
 }) => {
+  if (!isOpen) return null;
 
   // Default content if no specific page is configured
   const defaultContent: NodeDetailConfig = {
@@ -429,8 +430,6 @@ const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
       </div>
     </div>
   );
-
-  if (!isOpen) return null;
 
   return createPortal(modalContent, document.body);
 };

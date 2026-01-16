@@ -24,10 +24,6 @@ public class AuthenticationResolver {
         this.environment = environment;
     }
 
-    public void addAuthenticationHeaders(HttpHeaders headers, String targetUrl) {
-        addAuthenticationHeaders(headers, targetUrl, null);
-    }
-
     public void addAuthenticationHeaders(HttpHeaders headers, String targetUrl, String nodeName) {
         try {
             URI uri = URI.create(targetUrl);
@@ -47,68 +43,55 @@ public class AuthenticationResolver {
         }
     }
 
-    private AuthConfig resolveAuthentication(String host) {
-        return resolveAuthentication(host, null);
-    }
-
     private AuthConfig resolveAuthentication(String host, String nodeName) {
-        logger.info("Resolving authentication for host: {} (node: {})", host, nodeName);
+        logger.debug("Resolving authentication for host: {} (node: {})", host, nodeName);
 
-        // Check cache first
         AuthConfig cached = authCache.get(host);
         if (cached != null) {
-            logger.info("Using cached authentication for host: {}", host);
+            logger.debug("Using cached authentication for host: {}", host);
             return cached;
         }
 
-        // Try to find matching environment variables
-        AuthConfig config = null;
-
-        // Pattern 0: Node name (highest priority if provided)
-        if (nodeName != null && !nodeName.trim().isEmpty()) {
-            String nodeKey = nodeName.toUpperCase().replace(".", "_").replace("-", "_");
-            logger.info("Trying node name prefix: {}", nodeKey);
-            config = tryResolveByPrefix(nodeKey);
-        }
-
-        if (config == null) {
-            // Pattern 1: Exact host match (e.g., RABBITMQ_EXAMPLE_COM_USERNAME)
-            String hostKey = host.toUpperCase().replace(".", "_").replace("-", "_");
-            logger.info("Trying exact host prefix: {}", hostKey);
-            config = tryResolveByPrefix(hostKey);
-        }
-
-        if (config == null) {
-            // Pattern 2: Service name extraction (e.g., rabbitmq.example.com -> RABBITMQ_*)
-            String[] parts = host.split("\\.");
-            if (parts.length > 0) {
-                String serviceKey = parts[0].toUpperCase().replace("-", "_");
-                logger.info("Trying service prefix: {}", serviceKey);
-                config = tryResolveByPrefix(serviceKey);
-            }
-        }
-
-        if (config == null) {
-            // Pattern 3: Try common service prefixes
-            String[] prefixes = getCommonPrefixes(host);
-            logger.info("Trying common prefixes for host {}: {}", host, java.util.Arrays.toString(prefixes));
-            for (String prefix : prefixes) {
-                logger.info("Trying common prefix: {}", prefix);
-                config = tryResolveByPrefix(prefix);
-                if (config != null) {
-                    break;
-                }
-            }
-        }
+        AuthConfig config = tryResolveInOrder(host, nodeName);
 
         if (config != null) {
-            logger.info("Successfully resolved authentication for host: {} using config type: {}", host, config.type());
+            logger.debug("Resolved authentication for host: {} using type: {}", host, config.type());
             authCache.put(host, config);
         } else {
-            logger.warn("No authentication found for host: {}", host);
+            logger.debug("No authentication found for host: {}", host);
         }
 
         return config;
+    }
+
+    private AuthConfig tryResolveInOrder(String host, String nodeName) {
+        // Pattern 0: Node name (highest priority if provided)
+        if (nodeName != null && !nodeName.trim().isEmpty()) {
+            String nodeKey = nodeName.toUpperCase().replace(".", "_").replace("-", "_");
+            AuthConfig config = tryResolveByPrefix(nodeKey);
+            if (config != null) return config;
+        }
+
+        // Pattern 1: Exact host match (e.g., RABBITMQ_EXAMPLE_COM_USERNAME)
+        String hostKey = host.toUpperCase().replace(".", "_").replace("-", "_");
+        AuthConfig config = tryResolveByPrefix(hostKey);
+        if (config != null) return config;
+
+        // Pattern 2: Service name extraction (e.g., rabbitmq.example.com -> RABBITMQ_*)
+        String[] parts = host.split("\\.");
+        if (parts.length > 0) {
+            String serviceKey = parts[0].toUpperCase().replace("-", "_");
+            config = tryResolveByPrefix(serviceKey);
+            if (config != null) return config;
+        }
+
+        // Pattern 3: Try common service prefixes
+        for (String prefix : getCommonPrefixes(host)) {
+            config = tryResolveByPrefix(prefix);
+            if (config != null) return config;
+        }
+
+        return null;
     }
 
     private AuthConfig tryResolveByPrefix(String prefix) {
@@ -120,7 +103,7 @@ public class AuthenticationResolver {
 
         // Basic auth (username + password)
         if (StringUtils.hasText(username) && StringUtils.hasText(password)) {
-            logger.info("Found basic auth for prefix: {} (username: {})", prefix, username);
+            logger.debug("Found basic auth for prefix: {}", prefix);
             return new AuthConfig("basic", username, password, null, null, null);
         }
 

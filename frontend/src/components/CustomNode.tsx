@@ -179,69 +179,35 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
     setIsModalOpen(false);
   };
 
-  // Generate input handles
-  const inputHandleElements = [];
-  for (let i = 0; i < inputHandles; i++) {
-    let topPosition = '50%'; // Default center position
+  // Generate handles with vertical spreading when multiple
+  const generateHandles = (count: number, type: 'target' | 'source', prefix: string, position: Position) => {
+    const spacing = 30;
+    return Array.from({ length: count }, (_, i) => {
+      const topPosition = count > 1
+        ? `calc(50% + ${-(count - 1) * spacing / 2 + i * spacing}px)`
+        : '50%';
 
-    if (inputHandles > 1) {
-      // Spread handles vertically when multiple
-      const spacing = 30; // pixels between handles
-      const totalHeight = (inputHandles - 1) * spacing;
-      const startOffset = -totalHeight / 2;
-      const currentOffset = startOffset + (i * spacing);
-      topPosition = `calc(50% + ${currentOffset}px)`;
-    }
+      return (
+        <Handle
+          key={`${prefix}-${i}`}
+          type={type}
+          position={position}
+          id={`${prefix}-${i}`}
+          style={{
+            background: '#4b5563',
+            width: 12,
+            height: 12,
+            border: '2px solid #1f2937',
+            top: topPosition,
+            transform: 'translateY(-50%)',
+          }}
+        />
+      );
+    });
+  };
 
-    inputHandleElements.push(
-      <Handle
-        key={`input-${i}`}
-        type="target"
-        position={Position.Left}
-        id={`input-${i}`}
-        style={{
-          background: '#4b5563',
-          width: 12,
-          height: 12,
-          border: '2px solid #1f2937',
-          top: topPosition,
-          transform: 'translateY(-50%)',
-        }}
-      />
-    );
-  }
-
-  // Generate output handles
-  const outputHandleElements = [];
-  for (let i = 0; i < outputHandles; i++) {
-    let topPosition = '50%'; // Default center position
-
-    if (outputHandles > 1) {
-      // Spread handles vertically when multiple
-      const spacing = 30; // pixels between handles
-      const totalHeight = (outputHandles - 1) * spacing;
-      const startOffset = -totalHeight / 2;
-      const currentOffset = startOffset + (i * spacing);
-      topPosition = `calc(50% + ${currentOffset}px)`;
-    }
-
-    outputHandleElements.push(
-      <Handle
-        key={`output-${i}`}
-        type="source"
-        position={Position.Right}
-        id={`output-${i}`}
-        style={{
-          background: '#4b5563',
-          width: 12,
-          height: 12,
-          border: '2px solid #1f2937',
-          top: topPosition,
-          transform: 'translateY(-50%)',
-        }}
-      />
-    );
-  }
+  const inputHandleElements = generateHandles(inputHandles, 'target', 'input', Position.Left);
+  const outputHandleElements = generateHandles(outputHandles, 'source', 'output', Position.Right);
 
   return (
     <>

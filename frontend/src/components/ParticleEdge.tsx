@@ -23,14 +23,7 @@ const ParticleEdge: React.FC<ParticleEdgeProps> = ({
 }) => {
   const pathRef = useRef<SVGPathElement>(null);
   
-  // Get particle configuration from data
   const particles = data?.particles || { enabled: false };
-
-  // Debug logging
-  console.log(`🎨 ParticleEdge ${id} - data:`, data);
-  console.log(`🎨 ParticleEdge ${id} - particles:`, particles);
-  console.log(`🎨 ParticleEdge ${id} - has text:`, !!particles?.text);
-  console.log(`🎨 ParticleEdge ${id} - text value:`, particles?.text);
 
   // Create a smooth curved path
   const createCurvedPath = () => {
@@ -53,13 +46,7 @@ const ParticleEdge: React.FC<ParticleEdgeProps> = ({
     const particleCount = particles.count || 5;
     const particleElements = [];
 
-    // Create path based on direction
-    // If direction is "source", particles flow out of the node (normal direction)
-    // If direction is "target", particles flow into the node (normal direction)
-    const pathData = createCurvedPath(); // Always use normal direction for now
-
-    // Debug logging
-    console.log(`Particle direction: ${particles.direction}, pathData: ${pathData}`);
+    const pathData = createCurvedPath();
 
     for (let i = 0; i < particleCount; i++) {
       // Use density to control particle spacing (higher density = closer particles)
@@ -101,11 +88,8 @@ const ParticleEdge: React.FC<ParticleEdgeProps> = ({
             />
           </circle>
 
-          {/* Add text that moves with the particle */}
-          {particles.text && (() => {
-            console.log(`🎯 Creating text for particle ${i}: "${particles.text}", color: ${particles.textColor}, fontSize: ${particles.fontSize}`);
-            return (
-              <text
+          {particles.text && (
+            <text
               fontSize={particles.fontSize || 14}
               fill={particles.textColor || '#ffffff'}
               textAnchor="middle"
@@ -132,8 +116,7 @@ const ParticleEdge: React.FC<ParticleEdgeProps> = ({
                 begin={`${delay}s`}
               />
             </text>
-            );
-          })()}
+          )}
         </g>
       );
     }

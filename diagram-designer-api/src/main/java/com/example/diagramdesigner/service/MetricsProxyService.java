@@ -42,10 +42,6 @@ public class MetricsProxyService {
                 .build();
     }
 
-    public Mono<ResponseEntity<Object>> proxyRequest(String targetUrl) {
-        return proxyRequest(targetUrl, null);
-    }
-
     public Mono<ResponseEntity<Object>> proxyRequest(String targetUrl, String nodeName) {
         logger.debug("Proxying request to: {} (node: {})", targetUrl, nodeName);
 
@@ -89,10 +85,6 @@ public class MetricsProxyService {
                 .collect(java.util.stream.Collectors.toMap(
                         m -> m.keySet().iterator().next(),
                         m -> m.values().iterator().next()));
-    }
-
-    private Mono<Object> makeAuthenticatedRequest(String targetUrl) {
-        return makeAuthenticatedRequest(targetUrl, null);
     }
 
     private Mono<Object> makeAuthenticatedRequest(String targetUrl, String nodeName) {

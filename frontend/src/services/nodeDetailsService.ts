@@ -10,10 +10,6 @@ class NodeDetailsService {
    * Checks for /api/node-details/{nodeName} endpoint
    */
   async loadNodeDetails(nodeName: string): Promise<NodeDetailConfig | null> {
-    // Force clear cache for debugging
-    this.cache.delete(nodeName);
-
-    // Check cache first
     if (this.cache.has(nodeName)) {
       return this.cache.get(nodeName)!;
     }
@@ -38,11 +34,8 @@ class NodeDetailsService {
 
   private async fetchNodeDetails(nodeName: string): Promise<NodeDetailConfig | null> {
     try {
-      const timestamp = Date.now();
-      const url = buildApiUrl(`/node-details/${encodeURIComponent(nodeName)}?t=${timestamp}`);
+      const url = buildApiUrl(`/node-details/${encodeURIComponent(nodeName)}?t=${Date.now()}`);
       log.debug(`Loading node details for ${nodeName} from:`, url);
-
-      console.log(`[DEBUG] Fetching URL: ${url}`);
 
       const response = await fetch(url, {
         cache: 'no-cache',
@@ -53,11 +46,7 @@ class NodeDetailsService {
         }
       });
 
-      console.log(`[DEBUG] Response status: ${response.status}`);
-      console.log(`[DEBUG] Response headers:`, [...response.headers.entries()]);
-
       if (response.status === 404) {
-        // No custom configuration found - this is expected for most nodes
         log.debug(`No custom details found for node: ${nodeName}`);
         return null;
       }
@@ -66,16 +55,9 @@ class NodeDetailsService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const responseText = await response.text();
-      console.log(`[DEBUG] Raw response text for ${nodeName}:`, responseText.substring(0, 200) + '...');
-
-      const config = JSON.parse(responseText);
+      const config = await response.json();
       log.debug(`Loaded details for ${nodeName}:`, config);
-      console.log(`[DEBUG] Raw config for ${nodeName}:`, config);
-
-      const validated = this.validateConfig(config);
-      console.log(`[DEBUG] Validated config for ${nodeName}:`, validated);
-      return validated;
+      return this.validateConfig(config);
     } catch (error) {
       log.warn(`Failed to load details for node ${nodeName}:`, error);
       return null;

@@ -34,15 +34,13 @@ const CustomCurvedEdge: React.FC<CustomEdgeProps> = ({
   };
 
   return (
-    <>
-      <path
-        id={id}
-        style={style}
-        className="react-flow__edge-path"
-        d={createCurvedPath()}
-        markerEnd={markerEnd}
-      />
-    </>
+    <path
+      id={id}
+      style={style}
+      className="react-flow__edge-path"
+      d={createCurvedPath()}
+      markerEnd={markerEnd}
+    />
   );
 };
 
