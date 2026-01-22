@@ -62,8 +62,15 @@
 
 <div align="center">
 
-![Main Interface](pic2.png)
-*Main diagram interface with animated particles and real-time metrics*
+![System Architecture Example](main-diagram.png)
+*Example: Visualize complex architectures with real-time metrics, particle flows, and live status*
+
+### 🌟 **Powerful Visualization Capabilities**
+The example above demonstrates how you can build full-stack system visualizations including:
+- **🏗️ Microservices Architecture**: clearly map out frontend, backend, and data services
+- **📊 Live Metrics**: Integrate real-time performance data directly into nodes
+- **✨ Visual Data Flow**: Use particle animations to show data movement
+- **🔗 Service Dependencies**: Map connections and status across your entire stack
 
 ![Settings Panel](pic3.png)
 *Comprehensive settings and JSON editor*
@@ -96,7 +103,9 @@ This application uses a **hybrid Spring Boot + React architecture** for maximum 
 - **🧠 Smart Credential Resolution**: Priority-based authentication with fallbacks
 - **🔄 Dynamic Discovery**: Automatic service URL and credential resolution
 - **🔐 Variable Substitution**: Secure runtime replacement of `${VARIABLES}`
-- **🛡️ Enhanced CORS Protection**: Configurable cross-origin policies
+- **🛡️ Configurable CORS**: Origin allowlist via `CORS_ALLOWED_ORIGINS` environment variable
+- **🚧 SSRF Protection**: Blocks requests to private/internal IP ranges (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+- **📦 Batch Request Limits**: API rate limiting with configurable max batch size (default: 100)
 
 ### 📁 **Directory Structure**
 ```

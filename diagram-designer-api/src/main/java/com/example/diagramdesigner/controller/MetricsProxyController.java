@@ -10,14 +10,17 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.net.InetAddress;
+import java.net.URI;
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*") // Allow CORS for all origins in development
 public class MetricsProxyController {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsProxyController.class);
+    private static final int MAX_BATCH_SIZE = 100;
 
     private final MetricsProxyService metricsProxyService;
     private final ServiceDiscovery serviceDiscovery;
@@ -71,8 +74,12 @@ public class MetricsProxyController {
 
     @PostMapping("/metrics/batch")
     public Mono<ResponseEntity<Map<String, Object>>> proxyMetricsBatch(
-            @RequestBody java.util.List<Map<String, String>> requests) {
-        logger.info("Received batch metrics request for {} items", requests.size());
+            @RequestBody List<Map<String, String>> requests) {
+        if (requests.size() > MAX_BATCH_SIZE) {
+            return Mono.just(ResponseEntity.badRequest()
+                    .body(Map.of("error", "Batch size exceeds maximum of " + MAX_BATCH_SIZE)));
+        }
+        logger.debug("Received batch metrics request for {} items", requests.size());
         return metricsProxyService.getBatchMetrics(requests)
                 .map(ResponseEntity::ok);
     }
@@ -136,12 +143,85 @@ public class MetricsProxyController {
 
     private boolean isValidUrl(String url) {
         try {
-            java.net.URI uri = java.net.URI.create(url);
-            return uri.getScheme() != null && (uri.getScheme().equals("http") || uri.getScheme().equals("https"));
+            URI uri = URI.create(url);
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+
+            // Must have http or https scheme
+            if (scheme == null || (!scheme.equals("http") && !scheme.equals("https"))) {
+                return false;
+            }
+
+            // Must have a host
+            if (host == null || host.isEmpty()) {
+                return false;
+            }
+
+            // SSRF prevention: block private/internal IP ranges
+            if (isPrivateOrLocalAddress(host)) {
+                logger.warn("Blocked request to private/local address: {}", host);
+                return false;
+            }
+
+            return true;
         } catch (Exception e) {
             logger.warn("Invalid URL provided: {}", url, e);
             return false;
         }
+    }
+
+    /**
+     * Check if a hostname resolves to a private or local IP address.
+     * Blocks: localhost, 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16
+     */
+    private boolean isPrivateOrLocalAddress(String host) {
+        try {
+            // Check for obvious localhost patterns first
+            if (host.equalsIgnoreCase("localhost") || host.equals("127.0.0.1") || host.equals("::1")) {
+                return true;
+            }
+
+            // Resolve hostname and check IP
+            InetAddress address = InetAddress.getByName(host);
+            return address.isLoopbackAddress()
+                    || address.isSiteLocalAddress()
+                    || address.isLinkLocalAddress()
+                    || address.isAnyLocalAddress()
+                    || isPrivateIPv4(address);
+        } catch (Exception e) {
+            // If we can't resolve the hostname, block it to be safe
+            logger.warn("Could not resolve hostname for SSRF check: {}", host);
+            return true;
+        }
+    }
+
+    private boolean isPrivateIPv4(InetAddress address) {
+        byte[] addr = address.getAddress();
+        if (addr.length != 4) {
+            return false; // Not IPv4
+        }
+
+        int firstOctet = addr[0] & 0xFF;
+        int secondOctet = addr[1] & 0xFF;
+
+        // 10.0.0.0/8
+        if (firstOctet == 10) {
+            return true;
+        }
+        // 172.16.0.0/12
+        if (firstOctet == 172 && secondOctet >= 16 && secondOctet <= 31) {
+            return true;
+        }
+        // 192.168.0.0/16
+        if (firstOctet == 192 && secondOctet == 168) {
+            return true;
+        }
+        // 169.254.0.0/16 (link-local)
+        if (firstOctet == 169 && secondOctet == 254) {
+            return true;
+        }
+
+        return false;
     }
 
     private boolean isServiceName(String input) {
