@@ -9,6 +9,8 @@
     "proxy": "cd ../backend && npm start",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "vite preview",
     "setup": "npm install && cd ../backend && npm install",
     "start:full": "npm run setup && npm run dev:with-proxy"
@@ -40,6 +42,9 @@
     "tailwindcss": "^3.4.17",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "vitest": "^3.2.1",
     "vite": "^7.1.2"
   }
 }

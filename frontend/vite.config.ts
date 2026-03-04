@@ -8,4 +8,9 @@ export default defineConfig({
   build: {
     manifest: 'manifest.json',
   },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    globals: true,
+  },
 })
