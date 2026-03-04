@@ -122,25 +122,6 @@ public class MetricsProxyController {
         }
     }
 
-    @GetMapping("/debug/vcap-services")
-    public ResponseEntity<Map<String, Object>> debugVcapServices() {
-        try {
-            String vcapServices = System.getenv("VCAP_SERVICES");
-            if (vcapServices != null) {
-                return ResponseEntity.ok(Map.of(
-                        "vcap_services_present", true,
-                        "vcap_services", vcapServices));
-            } else {
-                return ResponseEntity.ok(Map.of(
-                        "vcap_services_present", false,
-                        "message", "VCAP_SERVICES environment variable not found"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of(
-                    "error", e.getMessage()));
-        }
-    }
-
     private boolean isValidUrl(String url) {
         try {
             URI uri = URI.create(url);

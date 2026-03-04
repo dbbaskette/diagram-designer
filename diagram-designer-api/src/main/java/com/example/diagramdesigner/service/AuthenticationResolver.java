@@ -46,9 +46,10 @@ public class AuthenticationResolver {
     private AuthConfig resolveAuthentication(String host, String nodeName) {
         logger.debug("Resolving authentication for host: {} (node: {})", host, nodeName);
 
-        AuthConfig cached = authCache.get(host);
+        String cacheKey = buildCacheKey(host, nodeName);
+        AuthConfig cached = authCache.get(cacheKey);
         if (cached != null) {
-            logger.debug("Using cached authentication for host: {}", host);
+            logger.debug("Using cached authentication for host: {} (cacheKey: {})", host, cacheKey);
             return cached;
         }
 
@@ -56,7 +57,7 @@ public class AuthenticationResolver {
 
         if (config != null) {
             logger.debug("Resolved authentication for host: {} using type: {}", host, config.type());
-            authCache.put(host, config);
+            authCache.put(cacheKey, config);
         } else {
             logger.debug("No authentication found for host: {}", host);
         }
@@ -66,8 +67,8 @@ public class AuthenticationResolver {
 
     private AuthConfig tryResolveInOrder(String host, String nodeName) {
         // Pattern 0: Node name (highest priority if provided)
-        if (nodeName != null && !nodeName.trim().isEmpty()) {
-            String nodeKey = nodeName.toUpperCase().replace(".", "_").replace("-", "_");
+        String nodeKey = normalizeNodeKey(nodeName);
+        if (nodeKey != null) {
             AuthConfig config = tryResolveByPrefix(nodeKey);
             if (config != null) return config;
         }
@@ -92,6 +93,18 @@ public class AuthenticationResolver {
         }
 
         return null;
+    }
+
+    private String buildCacheKey(String host, String nodeName) {
+        String normalizedNode = normalizeNodeKey(nodeName);
+        return host.toLowerCase() + "|" + (normalizedNode != null ? normalizedNode : "");
+    }
+
+    private String normalizeNodeKey(String nodeName) {
+        if (!StringUtils.hasText(nodeName)) {
+            return null;
+        }
+        return nodeName.trim().toUpperCase().replace(".", "_").replace("-", "_");
     }
 
     private AuthConfig tryResolveByPrefix(String prefix) {
