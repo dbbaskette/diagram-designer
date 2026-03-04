@@ -40,6 +40,73 @@ interface DiagramViewProps {
   initialConfig?: DiagramConfig | null;
 }
 
+// Inject shared SVG filter definitions into the ReactFlow SVG element once
+function useSharedParticleEdgeDefs() {
+  useEffect(() => {
+    const DEFS_ID = 'particle-edge-shared-defs';
+
+    // Wait for ReactFlow to render its SVG
+    const timer = setTimeout(() => {
+      const svg = document.querySelector('.react-flow__edges');
+      if (!svg || document.getElementById(DEFS_ID)) return;
+
+      const ns = 'http://www.w3.org/2000/svg';
+      const defs = document.createElementNS(ns, 'defs');
+      defs.id = DEFS_ID;
+
+      // particle-glow filter
+      const particleFilter = document.createElementNS(ns, 'filter');
+      particleFilter.setAttribute('id', 'particle-glow');
+      particleFilter.setAttribute('x', '-100%');
+      particleFilter.setAttribute('y', '-100%');
+      particleFilter.setAttribute('width', '300%');
+      particleFilter.setAttribute('height', '300%');
+      const blur1 = document.createElementNS(ns, 'feGaussianBlur');
+      blur1.setAttribute('stdDeviation', '6');
+      blur1.setAttribute('result', 'coloredBlur');
+      const merge1 = document.createElementNS(ns, 'feMerge');
+      const mergeNode1a = document.createElementNS(ns, 'feMergeNode');
+      mergeNode1a.setAttribute('in', 'coloredBlur');
+      const mergeNode1b = document.createElementNS(ns, 'feMergeNode');
+      mergeNode1b.setAttribute('in', 'SourceGraphic');
+      merge1.appendChild(mergeNode1a);
+      merge1.appendChild(mergeNode1b);
+      particleFilter.appendChild(blur1);
+      particleFilter.appendChild(merge1);
+
+      // text-glow filter
+      const textFilter = document.createElementNS(ns, 'filter');
+      textFilter.setAttribute('id', 'text-glow');
+      textFilter.setAttribute('x', '-50%');
+      textFilter.setAttribute('y', '-50%');
+      textFilter.setAttribute('width', '200%');
+      textFilter.setAttribute('height', '200%');
+      const blur2 = document.createElementNS(ns, 'feGaussianBlur');
+      blur2.setAttribute('stdDeviation', '3');
+      blur2.setAttribute('result', 'coloredBlur');
+      const merge2 = document.createElementNS(ns, 'feMerge');
+      const mergeNode2a = document.createElementNS(ns, 'feMergeNode');
+      mergeNode2a.setAttribute('in', 'coloredBlur');
+      const mergeNode2b = document.createElementNS(ns, 'feMergeNode');
+      mergeNode2b.setAttribute('in', 'SourceGraphic');
+      merge2.appendChild(mergeNode2a);
+      merge2.appendChild(mergeNode2b);
+      textFilter.appendChild(blur2);
+      textFilter.appendChild(merge2);
+
+      defs.appendChild(particleFilter);
+      defs.appendChild(textFilter);
+      svg.prepend(defs);
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      const existing = document.getElementById(DEFS_ID);
+      if (existing) existing.remove();
+    };
+  }, []);
+}
+
 // Inner component that uses ReactFlow hooks
 const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDiagram = 'diagram-config.json', showCoordinates = false, initialConfig = null }) => {
   const { theme } = useTheme();
@@ -48,6 +115,9 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [config, setConfig] = useState<DiagramConfig | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Inject shared SVG filter defs once for all ParticleEdge instances
+  useSharedParticleEdgeDefs();
 
   // Load configuration
   useEffect(() => {
