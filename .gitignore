@@ -53,6 +53,7 @@ configs/Telemetry-Processing.json
 configs/IMC-chatbot.json
 configs/details/*
 !configs/details/TEMPLATE.json
+!configs/details/RichDashboardExample.json
 # Also ignore in static resources
 diagram-designer-api/src/main/resources/static/configs/Telemetry-Processing.json
 diagram-designer-api/src/main/resources/static/configs/IMC-chatbot.json
