@@ -36,6 +36,7 @@ class MetricsProxyControllerSecurityTest {
     void debugVcapServicesEndpointIsNotExposed() throws Exception {
         mockMvc.perform(get("/api/debug/vcap-services"))
                 .andExpect(status().isNotFound())
+                .andExpect(content().string(containsString("Not found")))
                 .andExpect(content().string(not(containsString("VCAP_SERVICES"))))
                 .andExpect(content().string(not(containsString("vcap_services"))));
     }

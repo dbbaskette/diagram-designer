@@ -5,6 +5,7 @@ import com.example.diagramdesigner.service.ServiceDiscovery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +38,13 @@ public class MetricsProxyController {
                 "status", "healthy",
                 "timestamp", System.currentTimeMillis(),
                 "service", "diagram-designer-proxy"));
+    }
+
+    @GetMapping("/debug/vcap-services")
+    public ResponseEntity<Map<String, String>> debugVcapServices() {
+        logger.warn("Blocked request to deprecated debug endpoint: /api/debug/vcap-services");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", "Not found"));
     }
 
     @GetMapping("/metrics")
