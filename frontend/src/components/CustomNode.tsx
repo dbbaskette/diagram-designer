@@ -181,6 +181,8 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
           setNodeDetails(result.config);
         } else if (result.status === 'error') {
           log.error(`Failed to load details for ${data.name}: ${result.error}`);
+        } else {
+          // notFound is intentionally ignored to allow fallback modal content
         }
       } finally {
         setDetailsLoading(false);
