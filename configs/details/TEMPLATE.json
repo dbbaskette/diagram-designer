@@ -107,7 +107,7 @@
       },
       "tabs": {
         "description": "Tabbed container with switchable panels",
-        "fields": "tabs[{label, components[]}]"
+        "fields": "tabs[{label, components[]}], border_color"
       },
       "chart": {
         "description": "Data visualization (bar or donut chart)",
@@ -137,6 +137,13 @@
         "description": "Feature importance indicator with progress bar and dot",
         "fields": "key (label), value, percentage, bg_color (color name: orange|yellow|red|green|purple)"
       }
+    },
+    "enum_fields": {
+      "kpi-card.trend": ["up", "down", "flat"],
+      "chart.chart_type": ["bar", "donut"],
+      "status-indicator.status": ["healthy", "warning", "critical", "unknown"],
+      "link.type": ["primary", "secondary", "external"],
+      "customPage.type": ["iframe", "html", "markdown", "html-file", "components"]
     },
     "color_presets": [
       "blue-gradient - Blue gradient background for header sections",

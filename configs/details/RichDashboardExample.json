@@ -1,0 +1,186 @@
+{
+  "title": "Rich Dashboard Example",
+  "description": "End-to-end dashboard example for component-based node details pages",
+  "modalSize": {
+    "width": "95%",
+    "maxWidth": "1280px",
+    "maxHeight": "92vh"
+  },
+  "customPage": {
+    "type": "components",
+    "layout": [
+      {
+        "type": "section",
+        "title": "Platform Health Summary",
+        "bg_color": "blue-gradient",
+        "text_color": "text-white",
+        "border_color": "border-white-20",
+        "components": [
+          {
+            "type": "grid",
+            "grid_cols": 4,
+            "gap": "4",
+            "components": [
+              {
+                "type": "kpi-card",
+                "key": "Requests / sec",
+                "value": "14.2k",
+                "trend": "up",
+                "trend_value": "+8.4%",
+                "subtitle": "Compared to previous hour",
+                "icon": "fas fa-bolt"
+              },
+              {
+                "type": "kpi-card",
+                "key": "P95 Latency",
+                "value": "182ms",
+                "trend": "down",
+                "trend_value": "-12ms",
+                "subtitle": "User-facing API",
+                "icon": "fas fa-stopwatch"
+              },
+              {
+                "type": "kpi-card",
+                "key": "Error Rate",
+                "value": "0.22%",
+                "trend": "flat",
+                "trend_value": "0.00%",
+                "subtitle": "Last 15 minutes",
+                "icon": "fas fa-shield-heart"
+              },
+              {
+                "type": "kpi-card",
+                "key": "Active Sessions",
+                "value": "3,481",
+                "trend": "up",
+                "trend_value": "+221",
+                "subtitle": "Across all regions",
+                "icon": "fas fa-users"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "tabs",
+        "tabs": [
+          {
+            "label": "Traffic & Capacity",
+            "components": [
+              {
+                "type": "grid",
+                "grid_cols": 2,
+                "gap": "6",
+                "components": [
+                  {
+                    "type": "chart",
+                    "chart_type": "bar",
+                    "title": "Requests by Endpoint",
+                    "data": [
+                      { "label": "/api/orders", "value": 8200, "color": "#2563eb" },
+                      { "label": "/api/users", "value": 6400, "color": "#0ea5e9" },
+                      { "label": "/api/inventory", "value": 5200, "color": "#14b8a6" },
+                      { "label": "/api/payments", "value": 3100, "color": "#8b5cf6" },
+                      { "label": "/api/audit", "value": 1900, "color": "#f97316" }
+                    ]
+                  },
+                  {
+                    "type": "chart",
+                    "chart_type": "donut",
+                    "title": "Cluster CPU Allocation",
+                    "data": [
+                      { "label": "API", "value": 42, "color": "#3b82f6" },
+                      { "label": "Workers", "value": 27, "color": "#10b981" },
+                      { "label": "Streaming", "value": 18, "color": "#f59e0b" },
+                      { "label": "Batch", "value": 9, "color": "#ef4444" },
+                      { "label": "Reserved", "value": 4, "color": "#6b7280" }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "progress-bar",
+                "key": "Autoscaling Headroom",
+                "value": "78% available",
+                "percentage": 78
+              }
+            ]
+          },
+          {
+            "label": "Runtime Status",
+            "components": [
+              {
+                "type": "grid",
+                "grid_cols": 4,
+                "gap": "4",
+                "components": [
+                  { "type": "status-indicator", "status": "healthy", "key": "API Gateway", "value": "All checks passing" },
+                  { "type": "status-indicator", "status": "healthy", "key": "Order Service", "value": "Stable" },
+                  { "type": "status-indicator", "status": "warning", "key": "Payment Service", "value": "Retry rate elevated" },
+                  { "type": "status-indicator", "status": "warning", "key": "Cache Layer", "value": "Evictions increasing" }
+                ]
+              },
+              {
+                "type": "table",
+                "title": "Instance Inventory",
+                "columns": [
+                  { "header": "Instance", "field": "instance" },
+                  { "header": "Zone", "field": "zone" },
+                  { "header": "CPU %", "field": "cpu", "align": "right" },
+                  { "header": "Memory %", "field": "memory", "align": "right" }
+                ],
+                "rows": [
+                  { "instance": "api-01", "zone": "us-east-1a", "cpu": "63", "memory": "71" },
+                  { "instance": "api-02", "zone": "us-east-1b", "cpu": "58", "memory": "69" },
+                  { "instance": "api-03", "zone": "us-east-1c", "cpu": "66", "memory": "74" }
+                ]
+              }
+            ]
+          },
+          {
+            "label": "Configuration",
+            "components": [
+              {
+                "type": "section",
+                "title": "Service Runtime",
+                "bg_color": "white",
+                "components": [
+                  { "type": "stat-row", "key": "Environment", "value": "production" },
+                  { "type": "stat-row", "key": "Release", "value": "v2026.03.05" },
+                  { "type": "stat-row", "key": "Java", "value": "21" }
+                ]
+              },
+              {
+                "type": "section",
+                "title": "Operational Policy",
+                "bg_color": "gray-50",
+                "components": [
+                  { "type": "stat-row", "key": "Retry Policy", "value": "Exponential (max 3)" },
+                  { "type": "stat-row", "key": "Circuit Breaker", "value": "Enabled" },
+                  { "type": "stat-row", "key": "Rolling Restart Window", "value": "02:00 - 03:00 UTC" }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "links": [
+    {
+      "label": "Operations Dashboard",
+      "url": "https://dashboard.example.com/ops",
+      "type": "primary"
+    },
+    {
+      "label": "Service Runbook",
+      "url": "https://wiki.example.com/runbooks/rich-dashboard-example",
+      "type": "secondary"
+    },
+    {
+      "label": "External Incident Feed",
+      "url": "https://status.example.net/incidents",
+      "type": "external"
+    }
+  ]
+}
