@@ -407,17 +407,17 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
     [nodes, searchQuery, healthFilter, nodeStatuses]
   );
 
+  const isFiltering = searchQuery !== '' || healthFilter !== 'all';
+
   const filteredNodes = useMemo(
-    () => applyNodeVisibility(nodes, visibleNodeIds),
-    [nodes, visibleNodeIds]
+    () => (isFiltering ? applyNodeVisibility(nodes, visibleNodeIds) : nodes),
+    [nodes, visibleNodeIds, isFiltering]
   );
 
   const filteredEdges = useMemo(
-    () => applyEdgeVisibility(edges, visibleNodeIds),
-    [edges, visibleNodeIds]
+    () => (isFiltering ? applyEdgeVisibility(edges, visibleNodeIds) : edges),
+    [edges, visibleNodeIds, isFiltering]
   );
-
-  const isFiltering = searchQuery !== '' || healthFilter !== 'all';
 
   if (loading) {
     return (

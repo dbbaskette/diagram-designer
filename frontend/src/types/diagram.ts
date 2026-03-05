@@ -1,3 +1,5 @@
+import type { NodeStatus } from '../utils/nodeStatus';
+
 export interface DiagramConfig {
   config: {
     layout: 'horizontal' | 'vertical';
@@ -100,5 +102,5 @@ export interface NodeData extends DiagramNode {
   };
   showCoordinates?: boolean;
   onTogglePin?: (nodeId: string) => void;
-  onStatusChange?: (nodeId: string, status: 'up' | 'down' | 'unknown') => void;
+  onStatusChange?: (nodeId: string, status: NodeStatus) => void;
 }

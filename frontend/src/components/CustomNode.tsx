@@ -97,8 +97,11 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
 
   // Report status changes to parent
   useEffect(() => {
+    if (status === 'unknown' && !lastChecked) {
+      return;
+    }
     data.onStatusChange?.(data.name, status);
-  }, [status, data.name, data.onStatusChange]);
+  }, [status, lastChecked, data.name, data.onStatusChange]);
 
   // Status checking using batch system
   useEffect(() => {

@@ -90,4 +90,24 @@ describe('NodeSearchFilter', () => {
     expect(screen.getByTestId('health-filter-down').getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByTestId('health-filter-all').getAttribute('aria-pressed')).toBe('false');
   });
+
+  it('focuses search input when / is pressed globally', () => {
+    render(<NodeSearchFilter {...defaultProps} />);
+
+    const input = screen.getByTestId('node-search-input');
+    expect(input).not.toHaveFocus();
+
+    fireEvent.keyDown(document, { key: '/' });
+    expect(input).toHaveFocus();
+  });
+
+  it('focuses search input on Ctrl+F shortcut', () => {
+    render(<NodeSearchFilter {...defaultProps} />);
+
+    const input = screen.getByTestId('node-search-input');
+    expect(input).not.toHaveFocus();
+
+    fireEvent.keyDown(document, { key: 'f', ctrlKey: true });
+    expect(input).toHaveFocus();
+  });
 });
