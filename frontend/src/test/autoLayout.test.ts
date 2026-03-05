@@ -44,9 +44,7 @@ describe('applyDagreLayout', () => {
     const result = applyDagreLayout(nodes, edges, new Set(['a']));
 
     const unpinnedNode = result.find((n) => n.id === 'b')!;
-    // b should have been repositioned by dagre, so it likely won't be at 0,0
-    // (dagre places connected nodes apart)
-    expect(unpinnedNode.position).toBeDefined();
+    expect(unpinnedNode.position).not.toEqual({ x: 0, y: 0 });
   });
 
   it('handles an empty graph', () => {
