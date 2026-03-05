@@ -32,13 +32,17 @@ class DiagramServiceTest {
     @Mock
     private ConfigurationProcessor configurationProcessor;
 
+    @Mock
+    private ConfigsDirectoryResolver configsDirectoryResolver;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private DiagramService diagramService;
 
     @BeforeEach
     void setUp() {
-        diagramService = new DiagramService(diagramRepository, configurationProcessor, objectMapper);
+        diagramService = new DiagramService(diagramRepository, configurationProcessor,
+                objectMapper, configsDirectoryResolver);
     }
 
     // --- CRUD Tests ---

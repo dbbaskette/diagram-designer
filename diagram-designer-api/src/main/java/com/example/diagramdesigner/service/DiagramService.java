@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,7 +15,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -28,13 +26,16 @@ public class DiagramService {
     private final DiagramRepository diagramRepository;
     private final ConfigurationProcessor configurationProcessor;
     private final ObjectMapper objectMapper;
+    private final ConfigsDirectoryResolver configsDirectoryResolver;
 
     public DiagramService(DiagramRepository diagramRepository,
                           ConfigurationProcessor configurationProcessor,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          ConfigsDirectoryResolver configsDirectoryResolver) {
         this.diagramRepository = diagramRepository;
         this.configurationProcessor = configurationProcessor;
         this.objectMapper = objectMapper;
+        this.configsDirectoryResolver = configsDirectoryResolver;
     }
 
     public List<Diagram> listDiagrams() {
@@ -83,7 +84,7 @@ public class DiagramService {
 
     @PostConstruct
     void importConfigFiles() {
-        Path configsDir = findConfigsDirectory();
+        Path configsDir = configsDirectoryResolver.findConfigsDirectory();
         importFromDirectory(configsDir);
     }
 
@@ -139,29 +140,4 @@ public class DiagramService {
         return null;
     }
 
-    static Path findConfigsDirectory() {
-        String[] possiblePaths = {
-                "configs",
-                "../configs",
-                "./configs"
-        };
-
-        for (String pathStr : possiblePaths) {
-            Path path = Paths.get(pathStr);
-            if (Files.exists(path) && Files.isDirectory(path)) {
-                return path;
-            }
-        }
-
-        try {
-            ClassPathResource resource = new ClassPathResource("configs");
-            if (resource.exists()) {
-                return null;
-            }
-        } catch (Exception e) {
-            // classpath not available
-        }
-
-        return null;
-    }
 }

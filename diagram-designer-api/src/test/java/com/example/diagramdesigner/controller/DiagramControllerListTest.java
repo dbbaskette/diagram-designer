@@ -2,6 +2,7 @@ package com.example.diagramdesigner.controller;
 
 import com.example.diagramdesigner.config.CacheProperties;
 import com.example.diagramdesigner.model.Diagram;
+import com.example.diagramdesigner.service.ConfigsDirectoryResolver;
 import com.example.diagramdesigner.service.ConfigurationProcessor;
 import com.example.diagramdesigner.service.DiagramService;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,12 +27,15 @@ class DiagramControllerListTest {
     @Mock
     private DiagramService diagramService;
 
+    @Mock
+    private ConfigsDirectoryResolver configsDirectoryResolver;
+
     private DiagramController controller;
 
     @BeforeEach
     void setUp() {
         CacheProperties cacheProperties = new CacheProperties();
-        controller = new DiagramController(configurationProcessor, diagramService, cacheProperties);
+        controller = new DiagramController(configurationProcessor, diagramService, configsDirectoryResolver, cacheProperties);
     }
 
     @Test

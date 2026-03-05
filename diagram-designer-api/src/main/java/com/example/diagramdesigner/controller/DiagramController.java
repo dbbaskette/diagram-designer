@@ -4,6 +4,7 @@ import com.example.diagramdesigner.config.CacheProperties;
 import com.example.diagramdesigner.dto.DiagramRequest;
 import com.example.diagramdesigner.dto.DiagramResponse;
 import com.example.diagramdesigner.model.Diagram;
+import com.example.diagramdesigner.service.ConfigsDirectoryResolver;
 import com.example.diagramdesigner.service.ConfigurationProcessor;
 import com.example.diagramdesigner.service.DiagramService;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -22,7 +23,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
@@ -44,14 +44,17 @@ public class DiagramController {
 
     private final ConfigurationProcessor configurationProcessor;
     private final DiagramService diagramService;
+    private final ConfigsDirectoryResolver configsDirectoryResolver;
     private final Cache<String, CachedConfig> configCache;
 
     @Autowired
     public DiagramController(ConfigurationProcessor configurationProcessor,
                              DiagramService diagramService,
+                             ConfigsDirectoryResolver configsDirectoryResolver,
                              CacheProperties cacheProperties) {
         this.configurationProcessor = configurationProcessor;
         this.diagramService = diagramService;
+        this.configsDirectoryResolver = configsDirectoryResolver;
         this.configCache = Caffeine.newBuilder()
                 .maximumSize(cacheProperties.getDiagram().getMaxSize())
                 .expireAfterWrite(Duration.ofSeconds(cacheProperties.getDiagram().getTtlSeconds()))
@@ -77,7 +80,7 @@ public class DiagramController {
 
     private ResponseEntity<List<String>> listDiagramsFromFiles() {
         try {
-            Path configsDir = findConfigsDirectory();
+            Path configsDir = configsDirectoryResolver.findConfigsDirectory();
 
             if (configsDir != null) {
                 try (Stream<Path> files = Files.list(configsDir)) {
@@ -124,7 +127,7 @@ public class DiagramController {
     @SuppressWarnings("null")
     public ResponseEntity<String> getDiagramConfig(@PathVariable String filename) {
         try {
-            Path configsDir = findConfigsDirectory();
+            Path configsDir = configsDirectoryResolver.findConfigsDirectory();
 
             // Check cache first
             CachedConfig cached = configCache.getIfPresent(filename);
@@ -287,39 +290,4 @@ public class DiagramController {
         }
     }
 
-    /**
-     * Find the configs directory, trying multiple possible locations
-     */
-    private Path findConfigsDirectory() {
-        // Try different locations for configs directory
-        String[] possiblePaths = {
-                "configs", // Local development (project root)
-                "../configs", // If running from backend/ subdirectory
-                "./configs" // Deployment (same directory as JAR)
-        };
-
-        for (String pathStr : possiblePaths) {
-            Path path = Paths.get(pathStr);
-            if (Files.exists(path) && Files.isDirectory(path)) {
-                logger.debug("Found configs directory at: {}", path.toAbsolutePath());
-                return path;
-            }
-        }
-
-        // Try classpath location (packaged in JAR)
-        try {
-            ClassPathResource resource = new ClassPathResource("configs");
-            if (resource.exists()) {
-                // For JAR deployment, we need to work with the resource directly
-                // This is a fallback that will be used by other methods
-                logger.debug("Found configs in classpath resources");
-                return null; // Special case: return null to indicate classpath usage
-            }
-        } catch (Exception e) {
-            logger.debug("Could not access configs from classpath: {}", e.getMessage());
-        }
-
-        logger.warn("Configs directory not found in any of these locations: {}", String.join(", ", possiblePaths));
-        return null;
-    }
 }

@@ -1,6 +1,7 @@
 package com.example.diagramdesigner.controller;
 
 import com.example.diagramdesigner.config.CacheProperties;
+import com.example.diagramdesigner.service.ConfigsDirectoryResolver;
 import com.example.diagramdesigner.service.ConfigurationProcessor;
 import com.example.diagramdesigner.service.DiagramService;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +29,9 @@ class DiagramControllerCacheTest {
     @Mock
     private DiagramService diagramService;
 
+    @Mock
+    private ConfigsDirectoryResolver configsDirectoryResolver;
+
     private CacheProperties cacheProperties;
     private DiagramController controller;
 
@@ -37,7 +41,7 @@ class DiagramControllerCacheTest {
     @BeforeEach
     void setUp() {
         cacheProperties = new CacheProperties();
-        controller = new DiagramController(configurationProcessor, diagramService, cacheProperties);
+        controller = new DiagramController(configurationProcessor, diagramService, configsDirectoryResolver, cacheProperties);
     }
 
     @Test
@@ -69,7 +73,7 @@ class DiagramControllerCacheTest {
         cacheProperties.getDiagram().setMaxSize(32);
         cacheProperties.getDiagram().setTtlSeconds(120);
 
-        DiagramController customController = new DiagramController(configurationProcessor, diagramService, cacheProperties);
+        DiagramController customController = new DiagramController(configurationProcessor, diagramService, configsDirectoryResolver, cacheProperties);
         assertNotNull(customController);
         assertEquals(32, cacheProperties.getDiagram().getMaxSize());
         assertEquals(120, cacheProperties.getDiagram().getTtlSeconds());
