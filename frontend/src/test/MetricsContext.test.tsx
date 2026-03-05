@@ -258,6 +258,80 @@ describe('MetricsProvider', () => {
     expect(fetch).toHaveBeenCalledTimes(5);
   });
 
+  it('keeps surviving interval group running after other group unregisters', async () => {
+    const { result } = renderHook(() => useMetrics(), { wrapper });
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    );
+
+    let unregisterSlow: () => void;
+    act(() => {
+      result.current.registerMetric('http://example.com/fast', 'node-a', vi.fn(), vi.fn(), 5000);
+      unregisterSlow = result.current.registerMetric('http://example.com/slow', 'node-b', vi.fn(), vi.fn(), 15000);
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      unregisterSlow();
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(15000);
+    });
+
+    // After unregistering slow, only the fast 5s group should continue firing.
+    expect(fetch).toHaveBeenCalledTimes(4);
+
+    const subsequentBodies = (fetch as any).mock.calls.slice(1).map((call: any) =>
+      JSON.parse(call[1].body)
+    );
+    subsequentBodies.forEach((body: any[]) => {
+      expect(body).toHaveLength(1);
+      expect(body[0].url).toBe('http://example.com/fast');
+    });
+  });
+
+  it('re-registering same metric with new interval moves timer group', async () => {
+    const { result } = renderHook(() => useMetrics(), { wrapper });
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    );
+
+    act(() => {
+      result.current.registerMetric('http://example.com/m', 'node-a', vi.fn(), vi.fn(), 5000);
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(fetch).toHaveBeenCalledTimes(2);
+
+    act(() => {
+      result.current.registerMetric('http://example.com/m', 'node-a', vi.fn(), vi.fn(), 15000);
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(fetch).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      vi.advanceTimersByTime(10000);
+    });
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
   it('cleans up interval when all metrics in group unregister', async () => {
     const { result } = renderHook(() => useMetrics(), { wrapper });
 
