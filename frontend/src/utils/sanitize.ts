@@ -26,7 +26,6 @@ export function sanitizeHtml(dirty: string): string {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
     ALLOW_DATA_ATTR: false,
-    ADD_ATTR: ['target'],
     FORBID_TAGS: ['style', 'script', 'iframe', 'form', 'input', 'textarea', 'select', 'button', 'object', 'embed'],
     FORBID_ATTR: ['onerror', 'onclick', 'onload', 'onmouseover', 'onfocus', 'onblur'],
   });
