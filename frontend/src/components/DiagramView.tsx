@@ -49,21 +49,28 @@ interface DiagramViewProps {
   initialConfig?: DiagramConfig | null;
 }
 
-const readStoredPinnedNodeIds = (diagramName: string): Set<string> => {
-  const pinnedKey = `diagram-pinned-${diagramName}`;
-  const saved = localStorage.getItem(pinnedKey);
+const readStoredPinnedNodeIds = (diagramName: string): { pins: Set<string>; hasStoredValue: boolean } => {
+  const keys = [`diagram-pins-${diagramName}`, `diagram-pinned-${diagramName}`];
 
-  if (!saved) {
-    return new Set();
+  for (const key of keys) {
+    const saved = localStorage.getItem(key);
+    if (!saved) {
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(saved);
+      return {
+        pins: Array.isArray(parsed) ? new Set(parsed) : new Set(),
+        hasStoredValue: true,
+      };
+    } catch (error) {
+      console.warn('Failed to parse pinned node IDs from localStorage:', error);
+      return { pins: new Set(), hasStoredValue: true };
+    }
   }
 
-  try {
-    const parsed = JSON.parse(saved);
-    return Array.isArray(parsed) ? new Set(parsed) : new Set();
-  } catch (error) {
-    console.warn('Failed to parse pinned node IDs from localStorage:', error);
-    return new Set();
-  }
+  return { pins: new Set(), hasStoredValue: false };
 };
 
 const readStoredPositions = (diagramName: string): Record<string, { x: number; y: number }> => {
@@ -210,7 +217,7 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
 
   // Load pinned node IDs from localStorage
   useEffect(() => {
-    setPinnedNodeIds(readStoredPinnedNodeIds(selectedDiagram));
+    setPinnedNodeIds(readStoredPinnedNodeIds(selectedDiagram).pins);
   }, [selectedDiagram]);
 
   const togglePinNode = useCallback((nodeId: string) => {
@@ -221,7 +228,7 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
       } else {
         next.add(nodeId);
       }
-      const pinnedKey = `diagram-pinned-${selectedDiagram}`;
+      const pinnedKey = `diagram-pins-${selectedDiagram}`;
       localStorage.setItem(pinnedKey, JSON.stringify([...next]));
       return next;
     });
@@ -232,7 +239,16 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
     const processConfig = (data: DiagramConfig, skipSavedPositions: boolean = false) => {
       // Load saved positions for this diagram (unless we're loading a template)
       const savedPositions = skipSavedPositions ? {} : readStoredPositions(selectedDiagram);
-      const pinnedForBuild = readStoredPinnedNodeIds(selectedDiagram);
+      const defaultPinned = new Set(
+        data.nodes.filter((node) => node.pinned).map((node) => node.name)
+      );
+      const storedPinned = readStoredPinnedNodeIds(selectedDiagram);
+      const pinnedForBuild = storedPinned.hasStoredValue ? storedPinned.pins : defaultPinned;
+
+      if (!storedPinned.hasStoredValue && defaultPinned.size > 0) {
+        localStorage.setItem(`diagram-pins-${selectedDiagram}`, JSON.stringify([...defaultPinned]));
+      }
+
       setPinnedNodeIds(pinnedForBuild);
 
       // Convert config nodes to React Flow nodes
