@@ -251,6 +251,24 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
         </div>
       </div>
 
+      {/* Pin/Unpin Toggle */}
+      <div className="absolute -top-2 -left-2">
+        <button
+          className={`w-5 h-5 rounded-full border-2 border-gray-900 flex items-center justify-center text-xs cursor-pointer transition-colors ${
+            data.pinned
+              ? 'bg-yellow-500 text-gray-900'
+              : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+          }`}
+          title={data.pinned ? 'Unpin node (allow auto-arrange)' : 'Pin node (protect from auto-arrange)'}
+          onClick={(e) => {
+            e.stopPropagation();
+            data.onTogglePin?.(data.name);
+          }}
+        >
+          <i className={`fas fa-thumbtack ${data.pinned ? '' : 'opacity-60'}`} style={{ fontSize: '9px' }}></i>
+        </button>
+      </div>
+
       {/* Node Title and Description - Below circle */}
       <div className="diagram-node-info">
         <div className="diagram-node-title">{data.displayName}</div>

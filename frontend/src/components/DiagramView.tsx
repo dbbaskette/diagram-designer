@@ -25,6 +25,7 @@ import ParticleEdge from './ParticleEdge';
 import SharedParticleEdgeDefs from './SharedParticleEdgeDefs';
 import type { DiagramConfig, DiagramNode } from '../types/diagram';
 import { useTheme } from '../context/ThemeContext';
+import { applyDagreLayout } from '../utils/autoLayout';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -50,6 +51,32 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [config, setConfig] = useState<DiagramConfig | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pinnedNodeIds, setPinnedNodeIds] = useState<Set<string>>(new Set());
+
+  // Load pinned node IDs from localStorage
+  useEffect(() => {
+    const pinnedKey = `diagram-pinned-${selectedDiagram}`;
+    const saved = localStorage.getItem(pinnedKey);
+    if (saved) {
+      setPinnedNodeIds(new Set(JSON.parse(saved)));
+    } else {
+      setPinnedNodeIds(new Set());
+    }
+  }, [selectedDiagram]);
+
+  const togglePinNode = useCallback((nodeId: string) => {
+    setPinnedNodeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+      const pinnedKey = `diagram-pinned-${selectedDiagram}`;
+      localStorage.setItem(pinnedKey, JSON.stringify([...next]));
+      return next;
+    });
+  }, [selectedDiagram]);
 
   // Load configuration
   useEffect(() => {
@@ -76,6 +103,8 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
             ...node,
             config: data.config,
             showCoordinates: showCoordinates,
+            pinned: pinnedNodeIds.has(node.name),
+            onTogglePin: togglePinNode,
           },
         };
       });
@@ -203,6 +232,34 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
 
     loadConfig();
   }, [selectedDiagram, initialConfig]);
+
+  // Update node data when pinnedNodeIds changes
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          pinned: pinnedNodeIds.has(node.id),
+          onTogglePin: togglePinNode,
+        },
+      }))
+    );
+  }, [pinnedNodeIds, setNodes, togglePinNode]);
+
+  const handleAutoLayout = useCallback(() => {
+    const direction = config?.config.layout === 'vertical' ? 'TB' : 'LR';
+    const laid = applyDagreLayout(nodes, edges, pinnedNodeIds, { direction });
+    setNodes(laid);
+
+    // Persist the new positions
+    const savedPositionsKey = `diagram-positions-${selectedDiagram}`;
+    const currentPositions = JSON.parse(localStorage.getItem(savedPositionsKey) || '{}');
+    laid.forEach((node) => {
+      currentPositions[node.id] = node.position;
+    });
+    localStorage.setItem(savedPositionsKey, JSON.stringify(currentPositions));
+  }, [nodes, edges, pinnedNodeIds, config, selectedDiagram, setNodes]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -342,13 +399,23 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
             color={theme === 'dark' ? '#374151' : '#e5e7eb'}
           />
           <Panel position="top-right">
-            <button
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-lg flex items-center gap-2 transition-colors"
-              onClick={downloadImage}
-            >
-              <i className="fas fa-download"></i>
-              Export Image
-            </button>
+            <div className="flex gap-2">
+              <button
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow-lg flex items-center gap-2 transition-colors"
+                onClick={handleAutoLayout}
+                title="Auto-arrange unpinned nodes using Dagre layout"
+              >
+                <i className="fas fa-sitemap"></i>
+                Auto-arrange
+              </button>
+              <button
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-lg flex items-center gap-2 transition-colors"
+                onClick={downloadImage}
+              >
+                <i className="fas fa-download"></i>
+                Export Image
+              </button>
+            </div>
           </Panel>
         </ReactFlow>
       </div>
