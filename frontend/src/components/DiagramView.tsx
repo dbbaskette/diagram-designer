@@ -360,6 +360,18 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
     );
   }, [pinnedNodeIds, setNodes, togglePinNode, handleNodeStatusChange]);
 
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          showCoordinates,
+        },
+      }))
+    );
+  }, [showCoordinates, setNodes]);
+
   const handleAutoLayout = useCallback(() => {
     const direction = config?.config.layout === 'vertical' ? 'TB' : 'LR';
     const laid = applyDagreLayout(nodes, edges, pinnedNodeIds, { direction });
