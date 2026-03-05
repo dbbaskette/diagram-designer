@@ -60,11 +60,26 @@ public class DiagramController {
 
     @GetMapping("/diagrams")
     public ResponseEntity<List<String>> listDiagrams() {
+        // Prefer database entries; fall back to file scan when DB is empty
+        List<Diagram> dbDiagrams = diagramService.listDiagrams();
+        if (!dbDiagrams.isEmpty()) {
+            List<String> names = dbDiagrams.stream()
+                    .map(d -> d.getName() + ".json")
+                    .sorted()
+                    .toList();
+            logger.debug("Returning {} diagram names from database", names.size());
+            return ResponseEntity.ok(names);
+        }
+
+        logger.debug("Database empty, falling back to file scan");
+        return listDiagramsFromFiles();
+    }
+
+    private ResponseEntity<List<String>> listDiagramsFromFiles() {
         try {
             Path configsDir = findConfigsDirectory();
 
             if (configsDir != null) {
-                // File system approach (local development)
                 try (Stream<Path> files = Files.list(configsDir)) {
                     List<String> diagramFiles = files
                             .filter(path -> path.toString().endsWith(".json"))
@@ -76,17 +91,13 @@ public class DiagramController {
                     return ResponseEntity.ok(diagramFiles);
                 }
             } else {
-                // Classpath approach (JAR deployment)
                 try {
                     ClassPathResource configsResource = new ClassPathResource("configs");
                     if (configsResource.exists()) {
-                        // In a JAR, we need to list resources differently
-                        // For now, return a hardcoded list - this can be improved later
                         List<String> knownFiles = List.of("diagram-config.json",
                                 "Telemetry-Processing.json", "Telemetry-Processing-2.json",
                                 "example-diagram-with-auth.json");
 
-                        // Filter to only include files that actually exist
                         List<String> existingFiles = knownFiles.stream()
                                 .filter(filename -> new ClassPathResource("configs/" + filename).exists())
                                 .sorted()
