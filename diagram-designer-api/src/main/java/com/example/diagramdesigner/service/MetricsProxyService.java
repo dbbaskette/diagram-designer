@@ -76,7 +76,7 @@ public class MetricsProxyService {
         );
 
         return shared
-                .map(response -> ResponseEntity.ok(response))
+                .map(ResponseEntity::ok)
                 .onErrorResume(this::handleError);
     }
 
@@ -103,10 +103,10 @@ public class MetricsProxyService {
     }
 
     String buildCacheKey(String targetUrl, String nodeName) {
-        return targetUrl + "|" + (nodeName != null ? nodeName : "");
+        return targetUrl + "\0" + (nodeName != null ? nodeName : "");
     }
 
-    private Mono<Object> makeAuthenticatedRequest(String targetUrl, String nodeName) {
+    Mono<Object> makeAuthenticatedRequest(String targetUrl, String nodeName) {
         try {
             // Build the request with authentication
             WebClient.RequestHeadersSpec<?> request = webClient.get()
