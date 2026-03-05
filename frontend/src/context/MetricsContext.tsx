@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useCallback, useRef, useEffect } from 'react';
 import type { DependencyGraph } from '../utils/dependencyGraph';
 import { getNeighbors } from '../utils/dependencyGraph';
+import { resolveInterval, DEFAULT_INTERVAL_MS, MIN_INTERVAL_MS } from '../utils/interval';
 import { log } from '../config/appConfig';
 
-const DEFAULT_INTERVAL_MS = 30000;
+export { DEFAULT_INTERVAL_MS, MIN_INTERVAL_MS };
 const PRIORITY_REFRESH_DEBOUNCE_MS = 2000;
 
 interface MetricRequest {
@@ -225,6 +226,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     intervalMs: number = DEFAULT_INTERVAL_MS
   ): (() => void) => {
     const key = `${node}-${url}`;
+    const resolvedIntervalMs = resolveInterval(intervalMs, undefined, undefined, `registerMetric(${node})`);
 
     // Wrap errorCallback to trigger priority refresh on failure
     const wrappedErrorCallback = (error: any) => {
@@ -233,7 +235,14 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     // Registering the same key again intentionally replaces the previous callbacks.
-    requestsRef.current.set(key, { url, node, key, intervalMs, callback, errorCallback: wrappedErrorCallback });
+    requestsRef.current.set(key, {
+      url,
+      node,
+      key,
+      intervalMs: resolvedIntervalMs,
+      callback,
+      errorCallback: wrappedErrorCallback,
+    });
     syncIntervals();
 
     return () => {
