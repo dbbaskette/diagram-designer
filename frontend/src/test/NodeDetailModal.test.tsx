@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
-import React from 'react';
 import NodeDetailModal from '../components/NodeDetailModal';
 import type { NodeDetailConfig } from '../components/NodeDetailModal';
 import type { NodeData } from '../types/diagram';
@@ -303,5 +302,39 @@ describe('NodeDetailModal', () => {
     expect(document.body.textContent).toContain('Traffic by Endpoint');
     expect(document.body.textContent).toContain('/api/users');
     expect(document.body.textContent).toContain('4200');
+    expect(document.body.querySelector('svg')).not.toBeNull();
+  });
+
+  it('renders donut chart components using svg circles', () => {
+    const config: NodeDetailConfig = {
+      title: 'Donut Chart Test',
+      customPage: {
+        type: 'components',
+        layout: [
+          {
+            type: 'chart',
+            chart_type: 'donut',
+            title: 'Service Mix',
+            data: [
+              { label: 'API', value: 40, color: '#3b82f6' },
+              { label: 'Workers', value: 35, color: '#10b981' },
+              { label: 'Batch', value: 25, color: '#f59e0b' },
+            ],
+          },
+        ],
+      },
+    };
+
+    render(
+      <NodeDetailModal
+        isOpen={true}
+        onClose={() => {}}
+        nodeData={baseNodeData}
+        nodeDetails={config}
+      />
+    );
+
+    expect(document.body.textContent).toContain('Service Mix');
+    expect(document.body.querySelectorAll('svg circle').length).toBeGreaterThanOrEqual(3);
   });
 });
