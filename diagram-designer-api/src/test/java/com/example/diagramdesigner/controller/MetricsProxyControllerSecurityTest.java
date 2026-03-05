@@ -27,6 +27,12 @@ class MetricsProxyControllerSecurityTest {
     private ServiceDiscovery serviceDiscovery;
 
     @Test
+    void listDiagramsEndpointIsRemoved() throws Exception {
+        mockMvc.perform(get("/api/list-diagrams"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void debugVcapServicesEndpointIsNotExposed() throws Exception {
         mockMvc.perform(get("/api/debug/vcap-services"))
                 .andExpect(status().isNotFound())

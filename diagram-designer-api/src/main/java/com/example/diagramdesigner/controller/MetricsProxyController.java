@@ -84,17 +84,6 @@ public class MetricsProxyController {
                 .map(ResponseEntity::ok);
     }
 
-    @GetMapping("/list-diagrams")
-    public ResponseEntity<Object> listDiagrams() {
-        // Return a simple list of available diagram files
-        // This could be expanded to scan the configs directory dynamically
-        return ResponseEntity.ok(Map.of(
-                "diagrams", new String[] {
-                        "diagram-config.json",
-                        "Telemetry-Processing.json"
-                }));
-    }
-
     @GetMapping("/service-url/{serviceName}")
     public ResponseEntity<Map<String, Object>> getServiceUrl(@PathVariable String serviceName) {
         logger.info("Resolving service URL for: {}", serviceName);

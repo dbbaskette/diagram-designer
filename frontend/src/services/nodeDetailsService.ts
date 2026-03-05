@@ -1,15 +1,20 @@
 import type { NodeDetailConfig } from '../components/NodeDetailModal';
 import { buildApiUrl, log } from '../config/appConfig';
 
+export type NodeDetailsResult =
+  | { status: 'success'; config: NodeDetailConfig }
+  | { status: 'notFound' }
+  | { status: 'error'; error: string };
+
 class NodeDetailsService {
-  private cache = new Map<string, NodeDetailConfig | null>();
-  private loadingPromises = new Map<string, Promise<NodeDetailConfig | null>>();
+  private cache = new Map<string, NodeDetailsResult>();
+  private loadingPromises = new Map<string, Promise<NodeDetailsResult>>();
 
   /**
    * Load node detail configuration from the server
    * Checks for /api/node-details/{nodeName} endpoint
    */
-  async loadNodeDetails(nodeName: string): Promise<NodeDetailConfig | null> {
+  async loadNodeDetails(nodeName: string): Promise<NodeDetailsResult> {
     if (this.cache.has(nodeName)) {
       return this.cache.get(nodeName)!;
     }
@@ -25,14 +30,17 @@ class NodeDetailsService {
 
     try {
       const result = await loadPromise;
-      this.cache.set(nodeName, result);
+      // Cache success and notFound, but not errors
+      if (result.status !== 'error') {
+        this.cache.set(nodeName, result);
+      }
       return result;
     } finally {
       this.loadingPromises.delete(nodeName);
     }
   }
 
-  private async fetchNodeDetails(nodeName: string): Promise<NodeDetailConfig | null> {
+  private async fetchNodeDetails(nodeName: string): Promise<NodeDetailsResult> {
     try {
       const url = buildApiUrl(`/node-details/${encodeURIComponent(nodeName)}?t=${Date.now()}`);
       log.debug(`Loading node details for ${nodeName} from:`, url);
@@ -48,19 +56,20 @@ class NodeDetailsService {
 
       if (response.status === 404) {
         log.debug(`No custom details found for node: ${nodeName}`);
-        return null;
+        return { status: 'notFound' };
       }
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        return { status: 'error', error: `HTTP ${response.status}: ${response.statusText}` };
       }
 
       const config = await response.json();
       log.debug(`Loaded details for ${nodeName}:`, config);
-      return this.validateConfig(config);
+      return { status: 'success', config: this.validateConfig(config) };
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       log.warn(`Failed to load details for node ${nodeName}:`, error);
-      return null;
+      return { status: 'error', error: message };
     }
   }
 

@@ -13,12 +13,14 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api")
 public class NodeDetailsController {
 
     private static final Logger logger = LoggerFactory.getLogger(NodeDetailsController.class);
+    private static final Pattern SAFE_NODE_NAME = Pattern.compile("^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$");
 
     private final ResourceLoader resourceLoader;
     private final ObjectMapper objectMapper;
@@ -33,6 +35,12 @@ public class NodeDetailsController {
 
     @GetMapping("/node-details/{nodeName}")
     public ResponseEntity<Object> getNodeDetails(@PathVariable String nodeName) {
+        if (!SAFE_NODE_NAME.matcher(nodeName).matches()) {
+            logger.warn("Rejected invalid nodeName: {}", nodeName);
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Invalid node name"));
+        }
+
         logger.info("Loading node details for: {}", nodeName);
 
         try {
