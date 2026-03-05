@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Handle, Position } from 'reactflow';
 import type { NodeProps } from 'reactflow';
 import type { NodeData, DataGridItem } from '../types/diagram';
@@ -113,6 +113,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nodeDetails, setNodeDetails] = useState<NodeDetailConfig | undefined>(undefined);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
 
   const { registerMetric } = useMetrics();
 
@@ -223,6 +224,29 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
     setIsModalOpen(false);
   };
 
+  const handleContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenuPosition({ x: event.clientX, y: event.clientY });
+  };
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenuPosition(null);
+  }, []);
+
+  useEffect(() => {
+    if (!contextMenuPosition) {
+      return;
+    }
+
+    const handleOutsideClick = () => closeContextMenu();
+    window.addEventListener('click', handleOutsideClick);
+
+    return () => {
+      window.removeEventListener('click', handleOutsideClick);
+    };
+  }, [contextMenuPosition, closeContextMenu]);
+
   // Generate handles with vertical spreading when multiple
   const generateHandles = (count: number, type: 'target' | 'source', prefix: string, position: Position) => {
     const spacing = 30;
@@ -268,6 +292,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
             : undefined
         }}
         onClick={handleNodeClick}
+        onContextMenu={handleContextMenu}
         title={data.url ? `Click to open: ${data.url}` : undefined}
       >
         {/* Node Icon - Only icon inside circle */}
@@ -292,25 +317,33 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
             title={`Status: ${status}${statusError ? ` (${statusError})` : ''}${lastChecked ? ` (Last checked: ${lastChecked.toLocaleTimeString()})` : ''}`}
           ></div>
         </div>
+
+        {/* Pin Indicator */}
+        {data.pinned && (
+          <div className="absolute -top-2 -left-2 w-5 h-5 rounded-full bg-yellow-500 border-2 border-gray-900 text-gray-900 flex items-center justify-center text-xs">
+            <span role="img" aria-label="Pinned node">📌</span>
+          </div>
+        )}
       </div>
 
-      {/* Pin/Unpin Toggle */}
-      <div className="absolute -top-2 -left-2">
-        <button
-          className={`w-5 h-5 rounded-full border-2 border-gray-900 flex items-center justify-center text-xs cursor-pointer transition-colors ${
-            data.pinned
-              ? 'bg-yellow-500 text-gray-900'
-              : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-          }`}
-          title={data.pinned ? 'Unpin node (allow auto-arrange)' : 'Pin node (protect from auto-arrange)'}
-          onClick={(e) => {
-            e.stopPropagation();
-            data.onTogglePin?.(data.name);
-          }}
+      {contextMenuPosition && (
+        <div
+          className="fixed z-50 bg-gray-800 border border-gray-600 rounded shadow-lg py-1 min-w-[140px]"
+          style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
+          onClick={(event) => event.stopPropagation()}
         >
-          <i className={`fas fa-thumbtack ${data.pinned ? '' : 'opacity-60'}`} style={{ fontSize: '9px' }}></i>
-        </button>
-      </div>
+          <button
+            className="w-full text-left px-3 py-1.5 text-sm text-gray-100 hover:bg-gray-700"
+            onClick={(event) => {
+              event.stopPropagation();
+              data.onTogglePin?.(data.name);
+              closeContextMenu();
+            }}
+          >
+            {data.pinned ? 'Unpin node' : 'Pin node'}
+          </button>
+        </div>
+      )}
 
       {/* Node Title and Description - Below circle */}
       <div className="diagram-node-info">
