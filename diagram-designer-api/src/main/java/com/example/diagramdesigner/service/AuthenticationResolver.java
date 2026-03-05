@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AuthenticationResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationResolver.class);
+    private static final String NO_AUTH_FINGERPRINT = "noauth";
 
     private final Environment environment;
     private final Map<String, AuthConfig> authCache = new ConcurrentHashMap<>();
@@ -60,15 +61,9 @@ public class AuthenticationResolver {
             }
             AuthConfig config = resolveAuthentication(host, nodeName);
             if (config == null) {
-                return "";
+                return NO_AUTH_FINGERPRINT;
             }
-            String material = config.type() + "|"
-                    + nullSafe(config.username()) + "|"
-                    + nullSafe(config.password()) + "|"
-                    + nullSafe(config.apiKey()) + "|"
-                    + nullSafe(config.headerName()) + "|"
-                    + nullSafe(config.bearerToken());
-            return sha256Short(material);
+            return hashAuthConfig(config);
         } catch (Exception e) {
             logger.warn("Error computing auth fingerprint for URL: {}", targetUrl, e);
             return "";
@@ -79,10 +74,17 @@ public class AuthenticationResolver {
         return s != null ? s : "";
     }
 
-    private static String sha256Short(String input) {
+    private static String hashAuthConfig(AuthConfig config) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            updateDigest(digest, config.type());
+            updateDigest(digest, config.username());
+            updateDigest(digest, config.password());
+            updateDigest(digest, config.apiKey());
+            updateDigest(digest, config.headerName());
+            updateDigest(digest, config.bearerToken());
+
+            byte[] hash = digest.digest();
             // Use first 8 bytes (16 hex chars) for a compact but collision-resistant fingerprint
             StringBuilder sb = new StringBuilder(16);
             for (int i = 0; i < 8; i++) {
@@ -92,6 +94,11 @@ public class AuthenticationResolver {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 not available", e);
         }
+    }
+
+    private static void updateDigest(MessageDigest digest, String value) {
+        digest.update((byte) '|');
+        digest.update(nullSafe(value).getBytes(StandardCharsets.UTF_8));
     }
 
     private AuthConfig resolveAuthentication(String host, String nodeName) {
