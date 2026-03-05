@@ -26,6 +26,10 @@ import SharedParticleEdgeDefs from './SharedParticleEdgeDefs';
 import type { DiagramConfig, DiagramNode } from '../types/diagram';
 import { useTheme } from '../context/ThemeContext';
 import { applyDagreLayout } from '../utils/autoLayout';
+import NodeSearchFilter from './NodeSearchFilter';
+import type { HealthFilter } from './NodeSearchFilter';
+import type { NodeStatus } from '../utils/nodeStatus';
+import { getVisibleNodeIds, applyNodeVisibility, applyEdgeVisibility, countNodesByStatus } from '../utils/nodeFilter';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -52,6 +56,18 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
   const [config, setConfig] = useState<DiagramConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [pinnedNodeIds, setPinnedNodeIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [healthFilter, setHealthFilter] = useState<HealthFilter>('all');
+  const [nodeStatuses, setNodeStatuses] = useState<Map<string, NodeStatus>>(new Map());
+
+  const handleNodeStatusChange = useCallback((nodeId: string, status: NodeStatus) => {
+    setNodeStatuses((prev) => {
+      if (prev.get(nodeId) === status) return prev;
+      const next = new Map(prev);
+      next.set(nodeId, status);
+      return next;
+    });
+  }, []);
 
   // Load pinned node IDs from localStorage
   useEffect(() => {
@@ -105,6 +121,7 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
             showCoordinates: showCoordinates,
             pinned: pinnedNodeIds.has(node.name),
             onTogglePin: togglePinNode,
+            onStatusChange: handleNodeStatusChange,
           },
         };
       });
@@ -242,10 +259,11 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
           ...node.data,
           pinned: pinnedNodeIds.has(node.id),
           onTogglePin: togglePinNode,
+          onStatusChange: handleNodeStatusChange,
         },
       }))
     );
-  }, [pinnedNodeIds, setNodes, togglePinNode]);
+  }, [pinnedNodeIds, setNodes, togglePinNode, handleNodeStatusChange]);
 
   const handleAutoLayout = useCallback(() => {
     const direction = config?.config.layout === 'vertical' ? 'TB' : 'LR';
@@ -338,6 +356,29 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
       });
   }, [getNodes, theme, selectedDiagram]);
 
+  // Compute node counts and filtered nodes/edges
+  const nodeCounts = useMemo(
+    () => countNodesByStatus(nodes, nodeStatuses),
+    [nodes, nodeStatuses]
+  );
+
+  const visibleNodeIds = useMemo(
+    () => getVisibleNodeIds(nodes, searchQuery, healthFilter, nodeStatuses),
+    [nodes, searchQuery, healthFilter, nodeStatuses]
+  );
+
+  const filteredNodes = useMemo(
+    () => applyNodeVisibility(nodes, visibleNodeIds),
+    [nodes, visibleNodeIds]
+  );
+
+  const filteredEdges = useMemo(
+    () => applyEdgeVisibility(edges, visibleNodeIds),
+    [edges, visibleNodeIds]
+  );
+
+  const isFiltering = searchQuery !== '' || healthFilter !== 'all';
+
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -367,8 +408,8 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
       {/* React Flow Diagram - Full Height */}
       <div className="h-full">
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={filteredNodes}
+          edges={filteredEdges}
           onNodesChange={handleNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
@@ -398,6 +439,20 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
             size={1}
             color={theme === 'dark' ? '#374151' : '#e5e7eb'}
           />
+          <Panel position="top-left">
+            <NodeSearchFilter
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              healthFilter={healthFilter}
+              onHealthFilterChange={setHealthFilter}
+              nodeCounts={nodeCounts}
+            />
+            {isFiltering && (
+              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Showing {visibleNodeIds.size} of {nodes.length} nodes
+              </div>
+            )}
+          </Panel>
           <Panel position="top-right">
             <div className="flex gap-2">
               <button

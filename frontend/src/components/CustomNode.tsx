@@ -60,11 +60,12 @@ const MetricRow: React.FC<{ metric: DataGridItem; nodeName: string }> = memo(({ 
           setValue('N/A');
           setError(true);
         }
-      }
+      },
+      metric.pollIntervalMs
     );
 
     return unregister;
-  }, [metric.url, metric.valueField, nodeName, registerMetric]);
+  }, [metric.url, metric.valueField, metric.pollIntervalMs, nodeName, registerMetric]);
 
   return (
     <div className="diagram-node-metric-row">
@@ -93,11 +94,18 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
 
   const { registerMetric } = useMetrics();
 
+  // Report status changes to parent
+  useEffect(() => {
+    data.onStatusChange?.(data.name, status);
+  }, [status, data.name, data.onStatusChange]);
+
   // Status checking using batch system
   useEffect(() => {
     if (!data.status) return;
 
     const proxyUrl = buildMetricsUrl(data.status.url, data.name);
+
+    const statusIntervalMs = data.status.updateInterval || data.pollIntervalMs;
 
     const unregister = registerMetric(
       proxyUrl,
@@ -131,11 +139,12 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
           setStatus('unknown');
           setStatusError('Network error');
         }
-      }
+      },
+      statusIntervalMs
     );
 
     return unregister;
-  }, [data.status, data.name, registerMetric]);
+  }, [data.status, data.name, data.pollIntervalMs, registerMetric]);
 
   // Modal functionality
   const handleNodeClick = async (event: React.MouseEvent) => {

@@ -80,6 +80,7 @@ export interface DataGridItem {
   label: string;
   url: string;
   valueField: string;
+  pollIntervalMs?: number;
 }
 
 export interface NodeMetrics {
@@ -99,4 +100,5 @@ export interface NodeData extends DiagramNode {
   };
   showCoordinates?: boolean;
   onTogglePin?: (nodeId: string) => void;
+  onStatusChange?: (nodeId: string, status: 'up' | 'down' | 'unknown') => void;
 }
