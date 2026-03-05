@@ -98,4 +98,5 @@ export interface NodeData extends DiagramNode {
     };
   };
   showCoordinates?: boolean;
+  onTogglePin?: (nodeId: string) => void;
 }
