@@ -15,7 +15,7 @@ import {
   getRectOfNodes,
   getTransformForBounds,
 } from 'reactflow';
-import type { Connection, Edge, Node } from 'reactflow';
+import type { Connection, Edge } from 'reactflow';
 import { toPng } from 'html-to-image';
 import 'reactflow/dist/style.css';
 

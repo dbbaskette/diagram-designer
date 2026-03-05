@@ -7,6 +7,7 @@ import NodeDetailModal, { type NodeDetailConfig } from './NodeDetailModal';
 import { nodeDetailsService } from '../services/nodeDetailsService';
 import { useMetrics } from '../context/MetricsContext';
 import { getNodeStatusClass } from '../utils/nodeStatus';
+import type { NodeStatus } from '../utils/nodeStatus';
 
 // Utility function to get nested object values by path (e.g., "measurements[0].value")
 const getNestedValue = (obj: any, path: string): any => {
@@ -83,7 +84,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
   const outputHandles = data.handles?.output !== undefined ? data.handles.output : 1;
 
   // Status monitoring state
-  const [status, setStatus] = useState<'up' | 'down' | 'unknown'>('unknown');
+  const [status, setStatus] = useState<NodeStatus>('unknown');
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
 
@@ -256,7 +257,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
         {/* Status Indicator */}
         <div className="absolute -top-2 -right-2">
           <div
-            className={`w-4 h-4 rounded-full border-2 border-gray-900 ${getNodeStatusClass(status as 'up' | 'down' | 'unknown')}`}
+            className={`w-4 h-4 rounded-full border-2 border-gray-900 ${getNodeStatusClass(status)}`}
             title={`Status: ${status}${statusError ? ` (${statusError})` : ''}${lastChecked ? ` (Last checked: ${lastChecked.toLocaleTimeString()})` : ''}`}
           ></div>
         </div>
