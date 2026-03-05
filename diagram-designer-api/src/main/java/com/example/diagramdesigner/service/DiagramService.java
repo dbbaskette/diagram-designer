@@ -55,6 +55,10 @@ public class DiagramService {
     }
 
     public Diagram createDiagram(DiagramRequest dto) {
+        if (diagramRepository.findByName(dto.getName()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Diagram already exists with name: " + dto.getName());
+        }
         Diagram diagram = new Diagram();
         diagram.setName(dto.getName());
         diagram.setTitle(dto.getTitle());
@@ -71,11 +75,10 @@ public class DiagramService {
     }
 
     public void deleteDiagram(Long id) {
-        if (!diagramRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Diagram not found with id: " + id);
-        }
-        diagramRepository.deleteById(id);
+        Diagram diagram = diagramRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Diagram not found with id: " + id));
+        diagramRepository.delete(diagram);
     }
 
     public String getProcessedConfig(Diagram diagram) {
