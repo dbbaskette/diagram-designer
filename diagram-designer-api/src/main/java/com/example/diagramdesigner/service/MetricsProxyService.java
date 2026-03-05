@@ -45,7 +45,7 @@ public class MetricsProxyService {
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024)) // 1MB
                 .build();
         this.cache = Caffeine.newBuilder()
-                .maximumSize(properties.getCacheMaxSize())
+                .maximumSize(properties.getMaxCacheSize())
                 .expireAfterWrite(Duration.ofMillis(properties.getCacheTtlMs()))
                 .build();
     }
@@ -74,10 +74,10 @@ public class MetricsProxyService {
                 makeAuthenticatedRequest(targetUrl, nodeName)
                         .doOnNext(response -> {
                             if (properties.isEnableCaching()) {
-                                cache.put(cacheKey, response);
+                                cache.put(k, response);
                             }
                         })
-                        .doFinally(signal -> inFlight.remove(cacheKey))
+                        .doFinally(signal -> inFlight.remove(k))
                         .cache()
         );
 

@@ -2,6 +2,7 @@ package com.example.diagramdesigner.service;
 
 import com.example.diagramdesigner.config.MetricsProxyProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +33,7 @@ class MetricsProxyServiceTest {
         properties = new MetricsProxyProperties();
         properties.setEnableCaching(true);
         properties.setCacheTtlMs(30000);
-        properties.setCacheMaxSize(256);
+        properties.setMaxCacheSize(256);
         properties.setTimeoutMs(5000);
         objectMapper = new ObjectMapper();
         authResolver = mock(AuthenticationResolver.class);
@@ -218,6 +219,59 @@ class MetricsProxyServiceTest {
     }
 
     @Test
+    void cacheEvictsOldestEntryWhenMaxSizeExceeded() {
+        properties.setMaxCacheSize(1);
+        service = spy(new MetricsProxyService(properties, objectMapper, authResolver));
+        when(authResolver.getAuthFingerprint(anyString(), any())).thenReturn("");
+
+        Map<String, Object> firstResponse = Map.of("data", "first");
+        Map<String, Object> secondResponse = Map.of("data", "second");
+        Map<String, Object> refreshedFirstResponse = Map.of("data", "first-refetched");
+        Map<String, Object> refreshedSecondResponse = Map.of("data", "second-refetched");
+
+        doReturn(Mono.just((Object) firstResponse))
+                .doReturn(Mono.just((Object) refreshedFirstResponse))
+                .when(service).makeAuthenticatedRequest("http://host/metrics/one", "node-a");
+        doReturn(Mono.just((Object) secondResponse))
+                .doReturn(Mono.just((Object) refreshedSecondResponse))
+                .when(service).makeAuthenticatedRequest("http://host/metrics/two", "node-a");
+
+        StepVerifier.create(service.proxyRequest("http://host/metrics/one", "node-a"))
+                .assertNext(re -> assertEquals(firstResponse, re.getBody()))
+                .verifyComplete();
+
+        StepVerifier.create(service.proxyRequest("http://host/metrics/two", "node-a"))
+                .assertNext(re -> assertEquals(secondResponse, re.getBody()))
+                .verifyComplete();
+
+        @SuppressWarnings("unchecked")
+        Cache<String, Object> cache = readPrivateField(service, "cache", Cache.class);
+        cache.cleanUp();
+        assertEquals(1, cache.estimatedSize());
+
+        String keyOne = service.buildCacheKey("http://host/metrics/one", "node-a", "");
+        String keyTwo = service.buildCacheKey("http://host/metrics/two", "node-a", "");
+
+        boolean hasKeyOne = cache.asMap().containsKey(keyOne);
+        boolean hasKeyTwo = cache.asMap().containsKey(keyTwo);
+        assertTrue(hasKeyOne ^ hasKeyTwo, "Exactly one cache entry should remain when max size is 1");
+
+        if (!hasKeyOne) {
+            StepVerifier.create(service.proxyRequest("http://host/metrics/one", "node-a"))
+                    .assertNext(re -> assertEquals(refreshedFirstResponse, re.getBody()))
+                    .verifyComplete();
+            verify(service, times(2)).makeAuthenticatedRequest("http://host/metrics/one", "node-a");
+            verify(service, times(1)).makeAuthenticatedRequest("http://host/metrics/two", "node-a");
+        } else {
+            StepVerifier.create(service.proxyRequest("http://host/metrics/two", "node-a"))
+                    .assertNext(re -> assertEquals(refreshedSecondResponse, re.getBody()))
+                    .verifyComplete();
+            verify(service, times(1)).makeAuthenticatedRequest("http://host/metrics/one", "node-a");
+            verify(service, times(2)).makeAuthenticatedRequest("http://host/metrics/two", "node-a");
+        }
+    }
+
+    @Test
     void cachedResponseReturnedWithoutUpstreamCall() {
         Map<String, Object> response = Map.of("cached", true);
 
@@ -259,5 +313,16 @@ class MetricsProxyServiceTest {
                 .verifyComplete();
 
         verify(service, times(2)).makeAuthenticatedRequest("http://host/metrics", "node-a");
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T readPrivateField(Object target, String fieldName, Class<T> type) {
+        try {
+            Field field = target.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return (T) field.get(target);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException("Unable to read field: " + fieldName, e);
+        }
     }
 }

@@ -8,7 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,14 +23,15 @@ import java.util.regex.Pattern;
 public class NodeDetailsController {
 
     private static final Logger logger = LoggerFactory.getLogger(NodeDetailsController.class);
-    private static final Pattern SAFE_NODE_NAME = Pattern.compile("^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$");
+    private static final Pattern NODE_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]{1,64}$");
 
     private final ResourceLoader resourceLoader;
     private final ObjectMapper objectMapper;
     private final ConfigurationProcessor configurationProcessor;
 
     @Autowired
-    public NodeDetailsController(ResourceLoader resourceLoader, ObjectMapper objectMapper, ConfigurationProcessor configurationProcessor) {
+    public NodeDetailsController(ResourceLoader resourceLoader, ObjectMapper objectMapper,
+            ConfigurationProcessor configurationProcessor) {
         this.resourceLoader = resourceLoader;
         this.objectMapper = objectMapper;
         this.configurationProcessor = configurationProcessor;
@@ -35,21 +39,19 @@ public class NodeDetailsController {
 
     @GetMapping("/node-details/{nodeName}")
     public ResponseEntity<Object> getNodeDetails(@PathVariable String nodeName) {
-        if (!SAFE_NODE_NAME.matcher(nodeName).matches()) {
+        if (!NODE_NAME_PATTERN.matcher(nodeName).matches()) {
             logger.warn("Rejected invalid nodeName: {}", nodeName);
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Invalid node name"));
+                    .body(Map.of("error", "Invalid nodeName. Allowed pattern: ^[a-zA-Z0-9_-]{1,64}$"));
         }
 
         logger.info("Loading node details for: {}", nodeName);
 
         try {
-            // Try to load from classpath first (packaged in JAR)
             String configPath = "classpath:details/" + nodeName + ".json";
             Resource resource = resourceLoader.getResource(configPath);
 
             if (!resource.exists()) {
-                // Try alternative location
                 configPath = "classpath:configs/details/" + nodeName + ".json";
                 resource = resourceLoader.getResource(configPath);
             }
@@ -59,15 +61,9 @@ public class NodeDetailsController {
                 return ResponseEntity.notFound().build();
             }
 
-            // Read the raw JSON content
             String jsonContent = resource.getContentAsString(StandardCharsets.UTF_8);
-            logger.debug("Raw JSON content for {}: {}", nodeName, jsonContent.substring(0, Math.min(100, jsonContent.length())));
-
-            // Process variable substitution (including service discovery placeholders)
             String processedJson = configurationProcessor.processVariableSubstitution(jsonContent);
-            logger.debug("Processed JSON for {}: {}", nodeName, processedJson.substring(0, Math.min(100, processedJson.length())));
 
-            // Parse the processed JSON
             @SuppressWarnings("unchecked")
             Map<String, Object> nodeDetails = objectMapper.readValue(processedJson, Map.class);
 
@@ -79,39 +75,5 @@ public class NodeDetailsController {
             return ResponseEntity.internalServerError()
                     .body(Map.of("error", "Failed to load node details", "message", e.getMessage()));
         }
-    }
-
-    @GetMapping("/node-details")
-    public ResponseEntity<Object> listAvailableDetails() {
-        // This endpoint could list all available detail configurations
-        // For now, return a simple response indicating how to create them
-        return ResponseEntity.ok(Map.of(
-                "message", "Node details endpoint is active",
-                "usage", "GET /api/node-details/{nodeName}",
-                "location", "Place detail JSON files in src/main/resources/details/ or src/main/resources/configs/details/",
-                "example", Map.of(
-                        "title", "Service Details",
-                        "description", "Detailed information about this service",
-                        "sections", new Object[]{
-                                Map.of(
-                                        "title", "Configuration",
-                                        "type", "info",
-                                        "content", "<div>Service configuration details...</div>"
-                                ),
-                                Map.of(
-                                        "title", "Metrics",
-                                        "type", "metrics",
-                                        "content", "<div>Real-time metrics...</div>"
-                                )
-                        },
-                        "links", new Object[]{
-                                Map.of(
-                                        "label", "Dashboard",
-                                        "url", "https://dashboard.example.com",
-                                        "type", "primary"
-                                )
-                        }
-                )
-        ));
     }
 }
