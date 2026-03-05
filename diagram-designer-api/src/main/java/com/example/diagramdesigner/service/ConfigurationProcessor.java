@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 public class ConfigurationProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigurationProcessor.class);
-    private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([A-Z_][A-Z0-9_-]*)(:([^}]*))?\\}");
+    private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([A-Za-z_][A-Za-z0-9_-]*)(:([^}]*))?\\}");
 
     private final Environment environment;
     private final ObjectMapper objectMapper;
