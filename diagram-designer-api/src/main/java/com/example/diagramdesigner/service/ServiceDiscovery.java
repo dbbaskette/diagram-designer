@@ -1,5 +1,6 @@
 package com.example.diagramdesigner.service;
 
+import com.example.diagramdesigner.config.CacheProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -22,8 +23,6 @@ import java.util.List;
 public class ServiceDiscovery {
 
     private static final Logger logger = LoggerFactory.getLogger(ServiceDiscovery.class);
-    private static final int SERVICE_CACHE_MAX_SIZE = 128;
-    private static final Duration SERVICE_CACHE_TTL = Duration.ofMinutes(5);
 
     private final DiscoveryClient discoveryClient;
     private final WebClient webClient;
@@ -34,7 +33,8 @@ public class ServiceDiscovery {
     private final Cache<String, String> serviceUrlCache;
 
     @Autowired
-    public ServiceDiscovery(DiscoveryClient discoveryClient, ObjectMapper objectMapper, Environment environment) {
+    public ServiceDiscovery(DiscoveryClient discoveryClient, ObjectMapper objectMapper, Environment environment,
+            CacheProperties cacheProperties) {
         this.discoveryClient = discoveryClient;
         this.objectMapper = objectMapper;
         this.environment = environment;
@@ -42,8 +42,8 @@ public class ServiceDiscovery {
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024))
                 .build();
         this.serviceUrlCache = Caffeine.newBuilder()
-                .maximumSize(SERVICE_CACHE_MAX_SIZE)
-                .expireAfterWrite(SERVICE_CACHE_TTL)
+                .maximumSize(cacheProperties.getServiceDiscovery().getMaxSize())
+                .expireAfterWrite(Duration.ofSeconds(cacheProperties.getServiceDiscovery().getTtlSeconds()))
                 .build();
     }
 

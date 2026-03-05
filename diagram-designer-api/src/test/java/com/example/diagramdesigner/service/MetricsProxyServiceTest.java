@@ -10,6 +10,7 @@ import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import reactor.core.publisher.Mono;
@@ -112,7 +113,7 @@ class MetricsProxyServiceTest {
 
         // Complete the upstream
         sink.tryEmitValue(response);
-        latch.await();
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "Timed out waiting for responses");
 
         assertEquals(1, upstreamCalls.get(), "Should only invoke upstream once for concurrent identical requests");
         assertEquals(response, results[0].getBody());
@@ -140,7 +141,7 @@ class MetricsProxyServiceTest {
         call2.subscribe(re -> { results[1] = re; latch.countDown(); });
 
         sink.tryEmitError(new RuntimeException("upstream failure"));
-        latch.await();
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "Timed out waiting for error responses");
 
         assertEquals(503, results[0].getStatusCode().value());
         assertEquals(503, results[1].getStatusCode().value());
@@ -151,6 +152,40 @@ class MetricsProxyServiceTest {
         ConcurrentMap<String, Mono<Object>> inFlightMap =
                 (ConcurrentMap<String, Mono<Object>>) inFlightField.get(service);
         assertTrue(inFlightMap.isEmpty(), "In-flight map should be empty after error completes");
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void successfulInFlightRequestCleansUpMap() throws Exception {
+        Sinks.One<Object> sink = Sinks.one();
+
+        doReturn(sink.asMono())
+                .when(service).makeAuthenticatedRequest("http://host/metrics", "node-a");
+
+        properties.setEnableCaching(false);
+
+        Mono<ResponseEntity<Object>> call1 = service.proxyRequest("http://host/metrics", "node-a");
+        Mono<ResponseEntity<Object>> call2 = service.proxyRequest("http://host/metrics", "node-a");
+
+        CountDownLatch latch = new CountDownLatch(2);
+        ResponseEntity<?>[] results = new ResponseEntity<?>[2];
+
+        call1.subscribe(re -> { results[0] = re; latch.countDown(); });
+        call2.subscribe(re -> { results[1] = re; latch.countDown(); });
+
+        Map<String, Object> response = Map.of("result", "ok");
+        sink.tryEmitValue(response);
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "Timed out waiting for responses");
+
+        assertEquals(200, results[0].getStatusCode().value());
+        assertEquals(200, results[1].getStatusCode().value());
+
+        // Verify inFlight map is cleaned up after successful completion
+        Field inFlightField = MetricsProxyService.class.getDeclaredField("inFlight");
+        inFlightField.setAccessible(true);
+        ConcurrentMap<String, Mono<Object>> inFlightMap =
+                (ConcurrentMap<String, Mono<Object>>) inFlightField.get(service);
+        assertTrue(inFlightMap.isEmpty(), "In-flight map should be empty after successful completion");
     }
 
     @Test

@@ -1,6 +1,14 @@
 spring:
   application:
     name: diagram-designer-api
+  datasource:
+    url: jdbc:sqlite:./diagrams.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.sqlite.hibernate.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
 
 server:
   port: ${PORT:8080}
@@ -27,10 +35,20 @@ metrics:
     timeout-ms: ${PROXY_TIMEOUT_MS:10000}
     enable-caching: ${ENABLE_CACHING:true}
     cache-ttl-ms: ${CACHE_TTL_MS:30000}
+    cache-max-size: ${CACHE_MAX_SIZE:256}
 
     # Authentication configurations are now dynamic
     # The service will read environment variables and match them to URLs
     # Pattern: <SERVICE_NAME>_USERNAME, <SERVICE_NAME>_PASSWORD, <SERVICE_NAME>_API_KEY, etc.
+
+# Cache Configuration (diagram config and service discovery caches)
+cache:
+  diagram:
+    max-size: ${DIAGRAM_CACHE_MAX_SIZE:64}
+    ttl-seconds: ${DIAGRAM_CACHE_TTL_SECONDS:600}
+  service-discovery:
+    max-size: ${SERVICE_DISCOVERY_CACHE_MAX_SIZE:128}
+    ttl-seconds: ${SERVICE_DISCOVERY_CACHE_TTL_SECONDS:300}
 
 ---
 # Development profile
@@ -73,3 +91,16 @@ eureka:
     enabled: false
     register-with-eureka: false
     fetch-registry: false
+
+---
+# Cloud Foundry profile (PostgreSQL via service binding)
+spring:
+  config:
+    activate:
+      on-profile: cf
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:}
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
