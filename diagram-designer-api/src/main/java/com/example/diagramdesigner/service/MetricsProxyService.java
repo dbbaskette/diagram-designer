@@ -17,6 +17,8 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class MetricsProxyService {
@@ -30,6 +32,7 @@ public class MetricsProxyService {
     private final AuthenticationResolver authenticationResolver;
 
     private final Cache<String, Object> cache;
+    private final ConcurrentMap<String, Mono<Object>> inFlight = new ConcurrentHashMap<>();
 
     @Autowired
     public MetricsProxyService(MetricsProxyProperties properties, ObjectMapper objectMapper,
@@ -49,23 +52,31 @@ public class MetricsProxyService {
     public Mono<ResponseEntity<Object>> proxyRequest(String targetUrl, String nodeName) {
         logger.debug("Proxying request to: {} (node: {})", targetUrl, nodeName);
 
+        String cacheKey = buildCacheKey(targetUrl, nodeName);
+
         // Check cache first
         if (properties.isEnableCaching()) {
-            Object cached = cache.getIfPresent(targetUrl);
+            Object cached = cache.getIfPresent(cacheKey);
             if (cached != null) {
-                logger.debug("Returning cached response for: {}", targetUrl);
+                logger.debug("Returning cached response for: {} (key: {})", targetUrl, cacheKey);
                 return Mono.just(ResponseEntity.ok(cached));
             }
         }
 
-        return makeAuthenticatedRequest(targetUrl, nodeName)
-                .map(response -> {
-                    // Cache the response if enabled
-                    if (properties.isEnableCaching()) {
-                        cache.put(targetUrl, response);
-                    }
-                    return ResponseEntity.ok(response);
-                })
+        // Deduplicate in-flight requests for the same cache key
+        Mono<Object> shared = inFlight.computeIfAbsent(cacheKey, k ->
+                makeAuthenticatedRequest(targetUrl, nodeName)
+                        .doOnNext(response -> {
+                            if (properties.isEnableCaching()) {
+                                cache.put(cacheKey, response);
+                            }
+                        })
+                        .doFinally(signal -> inFlight.remove(cacheKey))
+                        .cache()
+        );
+
+        return shared
+                .map(ResponseEntity::ok)
                 .onErrorResume(this::handleError);
     }
 
@@ -91,7 +102,11 @@ public class MetricsProxyService {
                         m -> m.values().iterator().next()));
     }
 
-    private Mono<Object> makeAuthenticatedRequest(String targetUrl, String nodeName) {
+    String buildCacheKey(String targetUrl, String nodeName) {
+        return targetUrl + "\0" + (nodeName != null ? nodeName : "");
+    }
+
+    Mono<Object> makeAuthenticatedRequest(String targetUrl, String nodeName) {
         try {
             // Build the request with authentication
             WebClient.RequestHeadersSpec<?> request = webClient.get()
