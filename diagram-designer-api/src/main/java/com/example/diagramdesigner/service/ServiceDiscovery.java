@@ -11,24 +11,27 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.Map;
 
 @Service
 public class ServiceDiscovery {
 
     private static final Logger logger = LoggerFactory.getLogger(ServiceDiscovery.class);
+    private static final int SERVICE_CACHE_MAX_SIZE = 128;
+    private static final Duration SERVICE_CACHE_TTL = Duration.ofMinutes(5);
 
     private final DiscoveryClient discoveryClient;
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final Environment environment;
 
-    // Cache for service URLs
-    private final Map<String, String> serviceUrlCache = new ConcurrentHashMap<>();
+    // Bounded cache for service URLs with TTL
+    private final Cache<String, String> serviceUrlCache;
 
     @Autowired
     public ServiceDiscovery(DiscoveryClient discoveryClient, ObjectMapper objectMapper, Environment environment) {
@@ -38,6 +41,10 @@ public class ServiceDiscovery {
         this.webClient = WebClient.builder()
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024))
                 .build();
+        this.serviceUrlCache = Caffeine.newBuilder()
+                .maximumSize(SERVICE_CACHE_MAX_SIZE)
+                .expireAfterWrite(SERVICE_CACHE_TTL)
+                .build();
     }
 
     /**
@@ -45,7 +52,7 @@ public class ServiceDiscovery {
      */
     public String discoverServiceUrl(String nodeName) {
         // Check cache first
-        String cachedUrl = serviceUrlCache.get(nodeName);
+        String cachedUrl = serviceUrlCache.getIfPresent(nodeName);
         if (cachedUrl != null) {
             return cachedUrl;
         }
@@ -553,7 +560,7 @@ public class ServiceDiscovery {
      * Clear the service URL cache (useful for refresh)
      */
     public void clearCache() {
-        serviceUrlCache.clear();
+        serviceUrlCache.invalidateAll();
         logger.info("Service URL cache cleared");
     }
 }

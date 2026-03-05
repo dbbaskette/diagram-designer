@@ -1,6 +1,8 @@
 package com.example.diagramdesigner.controller;
 
 import com.example.diagramdesigner.service.ConfigurationProcessor;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -30,12 +33,19 @@ import java.util.stream.Stream;
 public class DiagramController {
 
     private static final Logger logger = LoggerFactory.getLogger(DiagramController.class);
+    private static final int CONFIG_CACHE_MAX_SIZE = 64;
+    private static final Duration CONFIG_CACHE_TTL = Duration.ofMinutes(10);
 
     private final ConfigurationProcessor configurationProcessor;
+    private final Cache<String, CachedConfig> configCache;
 
     @Autowired
     public DiagramController(ConfigurationProcessor configurationProcessor) {
         this.configurationProcessor = configurationProcessor;
+        this.configCache = Caffeine.newBuilder()
+                .maximumSize(CONFIG_CACHE_MAX_SIZE)
+                .expireAfterWrite(CONFIG_CACHE_TTL)
+                .build();
     }
 
     @GetMapping("/diagrams")
@@ -96,8 +106,8 @@ public class DiagramController {
             Path configsDir = findConfigsDirectory();
 
             // Check cache first
-            if (configCache.containsKey(filename)) {
-                CachedConfig cached = configCache.get(filename);
+            CachedConfig cached = configCache.getIfPresent(filename);
+            if (cached != null) {
                 // For filesystem, check if file has changed
                 if (configsDir != null) {
                     Path configPath = configsDir.resolve(filename);
@@ -201,7 +211,6 @@ public class DiagramController {
         }
     }
 
-    private final java.util.Map<String, CachedConfig> configCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Find the configs directory, trying multiple possible locations
