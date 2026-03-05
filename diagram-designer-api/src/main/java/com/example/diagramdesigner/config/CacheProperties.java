@@ -10,13 +10,17 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "cache")
 public class CacheProperties {
 
-    private final Diagram diagram = new Diagram();
+    private final DiagramCache diagram = new DiagramCache();
     private final ServiceDiscovery serviceDiscovery = new ServiceDiscovery();
 
-    public Diagram getDiagram() { return diagram; }
+    public DiagramCache getDiagramCache() { return diagram; }
+
+    @Deprecated
+    public DiagramCache getDiagram() { return diagram; }
+
     public ServiceDiscovery getServiceDiscovery() { return serviceDiscovery; }
 
-    public static class Diagram {
+    public static class DiagramCache {
         @Min(1)
         private int maxSize = 64;
 
