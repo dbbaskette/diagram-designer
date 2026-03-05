@@ -59,6 +59,13 @@ spring:
   config:
     activate:
       on-profile: dev
+  datasource:
+    url: jdbc:sqlite:./diagrams.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.sqlite.hibernate.dialect.SQLiteDialect
+  flyway:
+    locations: classpath:db/migration/sqlite
 
 server:
   port: 3001

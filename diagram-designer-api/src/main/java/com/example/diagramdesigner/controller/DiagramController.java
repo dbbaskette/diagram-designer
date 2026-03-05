@@ -56,8 +56,8 @@ public class DiagramController {
         this.diagramService = diagramService;
         this.configsDirectoryResolver = configsDirectoryResolver;
         this.configCache = Caffeine.newBuilder()
-                .maximumSize(cacheProperties.getDiagram().getMaxSize())
-                .expireAfterWrite(Duration.ofSeconds(cacheProperties.getDiagram().getTtlSeconds()))
+                .maximumSize(cacheProperties.getDiagramCache().getMaxSize())
+                .expireAfterWrite(Duration.ofSeconds(cacheProperties.getDiagramCache().getTtlSeconds()))
                 .build();
     }
 
