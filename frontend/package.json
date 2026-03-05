@@ -6,13 +6,13 @@
   "scripts": {
     "dev": "vite",
     "dev:with-proxy": "concurrently \"npm run dev\" \"npm run proxy\"",
-    "proxy": "cd ../backend && npm start",
+    "proxy": "cd ../diagram-designer-api && ../mvnw spring-boot:run",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
-    "setup": "npm install && cd ../backend && npm install",
+    "setup": "npm install",
     "start:full": "npm run setup && npm run dev:with-proxy"
   },
   "dependencies": {
