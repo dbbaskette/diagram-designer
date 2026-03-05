@@ -236,4 +236,28 @@ class MetricsProxyServiceTest {
 
         verify(service, times(1)).makeAuthenticatedRequest("http://host/metrics", "node-a");
     }
+
+    @Test
+    void cachingDisabledBypassesCacheEntirelyAndCallsUpstreamEveryTime() {
+        properties.setEnableCaching(false);
+        service = spy(new MetricsProxyService(properties, objectMapper, authResolver));
+        when(authResolver.getAuthFingerprint(anyString(), any())).thenReturn("");
+
+        Map<String, Object> response = Map.of("data", "fresh");
+
+        doReturn(Mono.just((Object) response))
+                .when(service).makeAuthenticatedRequest("http://host/metrics", "node-a");
+
+        // First call
+        StepVerifier.create(service.proxyRequest("http://host/metrics", "node-a"))
+                .assertNext(re -> assertEquals(response, re.getBody()))
+                .verifyComplete();
+
+        // Second call — should NOT be cached, should call upstream again
+        StepVerifier.create(service.proxyRequest("http://host/metrics", "node-a"))
+                .assertNext(re -> assertEquals(response, re.getBody()))
+                .verifyComplete();
+
+        verify(service, times(2)).makeAuthenticatedRequest("http://host/metrics", "node-a");
+    }
 }
