@@ -175,10 +175,12 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
     if (!nodeDetails && !detailsLoading) {
       setDetailsLoading(true);
       try {
-        const details = await nodeDetailsService.loadNodeDetails(data.name);
-        setNodeDetails(details || undefined);
-      } catch (error) {
-        log.error(`Failed to load details for ${data.name}:`, error);
+        const result = await nodeDetailsService.loadNodeDetails(data.name);
+        if (result.status === 'success') {
+          setNodeDetails(result.config);
+        } else if (result.status === 'error') {
+          log.error(`Failed to load details for ${data.name}: ${result.error}`);
+        }
       } finally {
         setDetailsLoading(false);
       }

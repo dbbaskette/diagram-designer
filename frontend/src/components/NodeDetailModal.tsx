@@ -1,6 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import type { NodeData } from '../types/diagram';
+import { sanitizeHtml, renderMarkdown } from '../utils/sanitize';
 
 interface NodeDetailModalProps {
   isOpen: boolean;
@@ -327,14 +328,14 @@ const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
               {content.customPage.type === 'html' && content.customPage.content && (
                 <div
                   className="prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: content.customPage.content }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.customPage.content) }}
                 />
               )}
               {content.customPage.type === 'markdown' && content.customPage.content && (
-                <div className="prose max-w-none">
-                  {/* TODO: Add markdown parser */}
-                  <pre>{content.customPage.content}</pre>
-                </div>
+                <div
+                  className="prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: renderMarkdown(content.customPage.content) }}
+                />
               )}
               {content.customPage.type === 'components' && content.customPage.layout && (
                 <div className="dashboard-components">
@@ -391,7 +392,7 @@ const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
                     `}
                   >
                     {typeof section.content === 'string' ? (
-                      <div dangerouslySetInnerHTML={{ __html: section.content }} />
+                      <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(section.content) }} />
                     ) : (
                       section.content
                     )}
