@@ -1,9 +1,14 @@
 package com.example.diagramdesigner.controller;
 
 import com.example.diagramdesigner.config.CacheProperties;
+import com.example.diagramdesigner.dto.DiagramRequest;
+import com.example.diagramdesigner.dto.DiagramResponse;
+import com.example.diagramdesigner.model.Diagram;
 import com.example.diagramdesigner.service.ConfigurationProcessor;
+import com.example.diagramdesigner.service.DiagramService;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +16,10 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,11 +43,15 @@ public class DiagramController {
     private static final Logger logger = LoggerFactory.getLogger(DiagramController.class);
 
     private final ConfigurationProcessor configurationProcessor;
+    private final DiagramService diagramService;
     private final Cache<String, CachedConfig> configCache;
 
     @Autowired
-    public DiagramController(ConfigurationProcessor configurationProcessor, CacheProperties cacheProperties) {
+    public DiagramController(ConfigurationProcessor configurationProcessor,
+                             DiagramService diagramService,
+                             CacheProperties cacheProperties) {
         this.configurationProcessor = configurationProcessor;
+        this.diagramService = diagramService;
         this.configCache = Caffeine.newBuilder()
                 .maximumSize(cacheProperties.getDiagram().getMaxSize())
                 .expireAfterWrite(Duration.ofSeconds(cacheProperties.getDiagram().getTtlSeconds()))
@@ -197,6 +208,61 @@ public class DiagramController {
             logger.error("Error processing diagram file: {}", filename, e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    // --- Database-backed CRUD endpoints ---
+
+    @GetMapping("/diagrams/db")
+    public ResponseEntity<List<DiagramResponse>> listDbDiagrams() {
+        return ResponseEntity.ok(diagramService.listDiagrams().stream()
+                .map(this::toSummaryResponse)
+                .toList());
+    }
+
+    @GetMapping("/diagrams/db/{id}")
+    public ResponseEntity<DiagramResponse> getDbDiagram(@PathVariable Long id) {
+        Diagram diagram = diagramService.getDiagram(id);
+        String processedConfig = diagramService.getProcessedConfig(diagram);
+        DiagramResponse response = new DiagramResponse(
+                diagram.getId(), diagram.getName(), diagram.getTitle(),
+                processedConfig, diagram.getCreatedAt(), diagram.getUpdatedAt());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/diagrams/db")
+    public ResponseEntity<DiagramResponse> createDbDiagram(@Valid @RequestBody DiagramRequest request) {
+        Diagram created = diagramService.createDiagram(request);
+        DiagramResponse response = toFullResponse(created);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(created.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(response);
+    }
+
+    @PutMapping("/diagrams/db/{id}")
+    public ResponseEntity<DiagramResponse> updateDbDiagram(@PathVariable Long id,
+                                                           @Valid @RequestBody DiagramRequest request) {
+        Diagram updated = diagramService.updateDiagram(id, request);
+        return ResponseEntity.ok(toFullResponse(updated));
+    }
+
+    @DeleteMapping("/diagrams/db/{id}")
+    public ResponseEntity<Void> deleteDbDiagram(@PathVariable Long id) {
+        diagramService.deleteDiagram(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    private DiagramResponse toSummaryResponse(Diagram diagram) {
+        return new DiagramResponse(
+                diagram.getId(), diagram.getName(), diagram.getTitle(),
+                null, diagram.getCreatedAt(), diagram.getUpdatedAt());
+    }
+
+    private DiagramResponse toFullResponse(Diagram diagram) {
+        return new DiagramResponse(
+                diagram.getId(), diagram.getName(), diagram.getTitle(),
+                diagram.getConfig(), diagram.getCreatedAt(), diagram.getUpdatedAt());
     }
 
     // Cache structure

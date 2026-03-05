@@ -2,6 +2,7 @@ package com.example.diagramdesigner.controller;
 
 import com.example.diagramdesigner.config.CacheProperties;
 import com.example.diagramdesigner.service.ConfigurationProcessor;
+import com.example.diagramdesigner.service.DiagramService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +24,9 @@ class DiagramControllerCacheTest {
 
     @Mock
     private ConfigurationProcessor configurationProcessor;
+
+    @Mock
+    private DiagramService diagramService;
 
     private CacheProperties cacheProperties;
     private DiagramController controller;
