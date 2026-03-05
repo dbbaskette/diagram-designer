@@ -50,6 +50,8 @@ export interface DiagramNode {
     downValue: string;
     updateInterval: number;
   };
+  pollIntervalMs?: number;
+  pinned?: boolean;
   dataGrid: DataGridItem[];
   connectTo: (string | Connection)[]; // Support both simple strings and detailed connections
   lineType: 'solid' | 'dashed';

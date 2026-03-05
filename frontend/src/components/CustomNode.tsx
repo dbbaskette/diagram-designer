@@ -6,6 +6,7 @@ import { buildMetricsUrl, log, appConfig } from '../config/appConfig';
 import NodeDetailModal, { type NodeDetailConfig } from './NodeDetailModal';
 import { nodeDetailsService } from '../services/nodeDetailsService';
 import { useMetrics } from '../context/MetricsContext';
+import { getNodeStatusClass } from '../utils/nodeStatus';
 
 // Utility function to get nested object values by path (e.g., "measurements[0].value")
 const getNestedValue = (obj: any, path: string): any => {
@@ -244,10 +245,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
         {/* Status Indicator */}
         <div className="absolute -top-2 -right-2">
           <div
-            className={`w-4 h-4 rounded-full border-2 border-gray-900 ${status === 'up' ? 'bg-green-500' :
-              status === 'down' ? 'bg-red-500' :
-                'bg-yellow-500'
-              }`}
+            className={`w-4 h-4 rounded-full border-2 border-gray-900 ${getNodeStatusClass(status as 'up' | 'down' | 'unknown')}`}
             title={`Status: ${status}${statusError ? ` (${statusError})` : ''}${lastChecked ? ` (Last checked: ${lastChecked.toLocaleTimeString()})` : ''}`}
           ></div>
         </div>
