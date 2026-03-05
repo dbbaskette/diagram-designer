@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import {
   ReactFlow,
@@ -15,7 +15,7 @@ import {
   getRectOfNodes,
   getTransformForBounds,
 } from 'reactflow';
-import type { Connection, Edge } from 'reactflow';
+import type { Connection, Edge, Node } from 'reactflow';
 import { toPng } from 'html-to-image';
 import 'reactflow/dist/style.css';
 
@@ -49,6 +49,66 @@ interface DiagramViewProps {
   initialConfig?: DiagramConfig | null;
 }
 
+const buildFlowEdges = (data: DiagramConfig): Edge[] => {
+  const flowEdges: Edge[] = [];
+
+  data.nodes.forEach((node: DiagramNode) => {
+    node.connectTo.forEach((connection, index: number) => {
+      const sourceId = typeof connection === 'string' ? connection : connection.target;
+      const outputHandle = typeof connection === 'object' ? connection.outputHandle || 0 : index;
+      const inputHandle = typeof connection === 'object' ? connection.inputHandle || 0 : 0;
+
+      const targetNode = data.nodes.find(n => n.name === sourceId);
+      if (!targetNode) {
+        return;
+      }
+
+      const connectionParticles = typeof connection === 'object' ? connection.particles : undefined;
+      const particles = connectionParticles || node.particles;
+
+      const connectionLineType = typeof connection === 'object' ? connection.lineType : undefined;
+      const connectionLineColor = typeof connection === 'object' ? connection.lineColor : undefined;
+      const connectionEdgeType = typeof connection === 'object' ? connection.edgeType : undefined;
+
+      const lineType = connectionLineType || node.lineType;
+      const lineColor = connectionLineColor || node.lineColor || '#3498db';
+      const baseEdgeType = connectionEdgeType || node.edgeType || 'smoothstep';
+
+      let edgeType = baseEdgeType;
+      if (particles?.enabled) {
+        edgeType = 'particle';
+      }
+
+      const edgeSource = particles?.direction === 'source' ? node.name : sourceId;
+      const edgeTarget = particles?.direction === 'source' ? sourceId : node.name;
+
+      flowEdges.push({
+        id: `${edgeSource}-${edgeTarget}-${index}`,
+        source: edgeSource,
+        target: edgeTarget,
+        sourceHandle: `output-${outputHandle}`,
+        targetHandle: `input-${inputHandle}`,
+        type: edgeType,
+        animated: particles?.enabled || false,
+        style: {
+          stroke: lineColor,
+          strokeWidth: 2,
+          strokeDasharray: lineType === 'dashed' ? '5,5' : undefined,
+        },
+        pathOptions: {
+          borderRadius: 20,
+        },
+        data: {
+          particles: particles,
+          originalEdgeType: baseEdgeType,
+        },
+      });
+    });
+  });
+
+  return flowEdges;
+};
+
 // Inner component that uses ReactFlow hooks
 const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDiagram = 'diagram-config.json', showCoordinates = false, initialConfig = null }) => {
   const { theme } = useTheme();
@@ -62,6 +122,46 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
   const [searchQuery, setSearchQuery] = useState('');
   const [healthFilter, setHealthFilter] = useState<HealthFilter>('all');
   const [nodeStatuses, setNodeStatuses] = useState<Map<string, NodeStatus>>(new Map());
+  const dragPersistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const memoizedFlowEdges = useMemo(() => {
+    if (!config) {
+      return [];
+    }
+    return buildFlowEdges(config);
+  }, [config]);
+
+  const persistNodePositions = useCallback((flowNodes: Pick<Node, 'id' | 'position'>[]) => {
+    const savedPositionsKey = `diagram-positions-${selectedDiagram}`;
+    const currentPositions = JSON.parse(localStorage.getItem(savedPositionsKey) || '{}');
+
+    flowNodes.forEach((node) => {
+      currentPositions[node.id] = node.position;
+    });
+
+    localStorage.setItem(savedPositionsKey, JSON.stringify(currentPositions));
+  }, [selectedDiagram]);
+
+  const schedulePositionPersist = useCallback((flowNodes: Pick<Node, 'id' | 'position'>[]) => {
+    const snapshot = flowNodes.map((node) => ({ id: node.id, position: node.position }));
+
+    if (dragPersistTimeoutRef.current) {
+      clearTimeout(dragPersistTimeoutRef.current);
+    }
+
+    dragPersistTimeoutRef.current = setTimeout(() => {
+      persistNodePositions(snapshot);
+      dragPersistTimeoutRef.current = null;
+    }, 300);
+  }, [persistNodePositions]);
+
+  useEffect(() => {
+    return () => {
+      if (dragPersistTimeoutRef.current) {
+        clearTimeout(dragPersistTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleNodeStatusChange = useCallback((nodeId: string, status: NodeStatus) => {
     setNodeStatuses((prev) => {
@@ -129,70 +229,7 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
         };
       });
 
-      // Create edges from connections (right-to-left definition)
-      const flowEdges: Edge[] = [];
-      data.nodes.forEach((node: DiagramNode) => {
-        node.connectTo.forEach((connection, index: number) => {
-          // Handle both string and object connection formats
-          const sourceId = typeof connection === 'string' ? connection : connection.target;
-          const outputHandle = typeof connection === 'object' ? connection.outputHandle || 0 : index;
-          const inputHandle = typeof connection === 'object' ? connection.inputHandle || 0 : 0;
-
-          // Find the target node to get its properties
-          const targetNode = data.nodes.find(n => n.name === sourceId);
-          if (targetNode) {
-            // Check for connection-specific particle configuration first, then fall back to node-level
-            const connectionParticles = typeof connection === 'object' ? connection.particles : undefined;
-            const particles = connectionParticles || node.particles;
-
-            // Get connection-specific styling or fall back to node-level
-            const connectionLineType = typeof connection === 'object' ? connection.lineType : undefined;
-            const connectionLineColor = typeof connection === 'object' ? connection.lineColor : undefined;
-            const connectionEdgeType = typeof connection === 'object' ? connection.edgeType : undefined;
-
-            const lineType = connectionLineType || node.lineType;
-            const lineColor = connectionLineColor || node.lineColor || '#3498db';
-            const baseEdgeType = connectionEdgeType || node.edgeType || 'smoothstep';
-
-            // Determine edge type based on particles and edgeType
-            let edgeType = baseEdgeType;
-            if (particles?.enabled) {
-              edgeType = 'particle';
-            }
-
-            // Create edge based on direction
-            // If direction is "source", edge goes from current node to target
-            // If direction is "target", edge goes from target to current node
-            const edgeSource = particles?.direction === 'source' ? node.name : sourceId;
-            const edgeTarget = particles?.direction === 'source' ? sourceId : node.name;
-
-            flowEdges.push({
-              id: `${edgeSource}-${edgeTarget}-${index}`,
-              source: edgeSource,
-              target: edgeTarget,
-              sourceHandle: `output-${outputHandle}`,
-              targetHandle: `input-${inputHandle}`,
-              type: edgeType,
-              animated: particles?.enabled || false,
-              style: {
-                stroke: lineColor,
-                strokeWidth: 2,
-                strokeDasharray: lineType === 'dashed' ? '5,5' : undefined,
-              },
-              pathOptions: {
-                borderRadius: 20,
-              },
-              data: {
-                particles: particles,
-                originalEdgeType: baseEdgeType,
-              },
-            });
-          }
-        });
-      });
-
       setNodes(flowNodes);
-      setEdges(flowEdges);
 
       // Build and publish dependency graph for priority refresh
       const depGraph = buildDependencyGraph(data.nodes);
@@ -257,6 +294,10 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
     loadConfig();
   }, [selectedDiagram, initialConfig]);
 
+  useEffect(() => {
+    setEdges(memoizedFlowEdges);
+  }, [memoizedFlowEdges, setEdges]);
+
   // Update node data when pinnedNodeIds changes
   useEffect(() => {
     setNodes((nds) =>
@@ -294,20 +335,12 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
   // Handle node position changes and save to localStorage
   const handleNodesChange = useCallback((changes: any[]) => {
     onNodesChange(changes);
+  }, [onNodesChange]);
 
-    // Save positions when nodes are moved
-    const positionChanges = changes.filter(change => change.type === 'position' && change.position);
-    if (positionChanges.length > 0) {
-      const savedPositionsKey = `diagram-positions-${selectedDiagram}`;
-      const currentPositions = JSON.parse(localStorage.getItem(savedPositionsKey) || '{}');
-
-      positionChanges.forEach(change => {
-        currentPositions[change.id] = change.position;
-      });
-
-      localStorage.setItem(savedPositionsKey, JSON.stringify(currentPositions));
-    }
-  }, [onNodesChange, selectedDiagram]);
+  const handleNodeDragStop = useCallback(() => {
+    const latestNodes = getNodes().map((node) => ({ id: node.id, position: node.position }));
+    schedulePositionPersist(latestNodes);
+  }, [getNodes, schedulePositionPersist]);
 
   const downloadImage = useCallback(() => {
     const nodesBounds = getRectOfNodes(getNodes());
@@ -418,6 +451,7 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
           nodes={filteredNodes}
           edges={filteredEdges}
           onNodesChange={handleNodesChange}
+          onNodeDragStop={handleNodeDragStop}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
