@@ -16,9 +16,8 @@ public class MetricsProxyProperties {
     @Min(1)
     private int cacheTtlMs = 30000;
     @Min(1)
-    private int cacheMaxSize = 256;
+    private int maxCacheSize = 500;
 
-    // Getters and setters
     public int getTimeoutMs() { return timeoutMs; }
     public void setTimeoutMs(int timeoutMs) { this.timeoutMs = timeoutMs; }
 
@@ -28,6 +27,12 @@ public class MetricsProxyProperties {
     public int getCacheTtlMs() { return cacheTtlMs; }
     public void setCacheTtlMs(int cacheTtlMs) { this.cacheTtlMs = cacheTtlMs; }
 
-    public int getCacheMaxSize() { return cacheMaxSize; }
-    public void setCacheMaxSize(int cacheMaxSize) { this.cacheMaxSize = cacheMaxSize; }
+    public int getMaxCacheSize() { return maxCacheSize; }
+    public void setMaxCacheSize(int maxCacheSize) { this.maxCacheSize = maxCacheSize; }
+
+    @Deprecated
+    public int getCacheMaxSize() { return maxCacheSize; }
+
+    @Deprecated
+    public void setCacheMaxSize(int cacheMaxSize) { this.maxCacheSize = cacheMaxSize; }
 }

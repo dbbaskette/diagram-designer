@@ -38,7 +38,7 @@ metrics:
     timeout-ms: ${PROXY_TIMEOUT_MS:10000}
     enable-caching: ${ENABLE_CACHING:true}
     cache-ttl-ms: ${CACHE_TTL_MS:30000}
-    cache-max-size: ${CACHE_MAX_SIZE:256}
+    max-cache-size: ${MAX_CACHE_SIZE:500}
 
     # Authentication configurations are now dynamic
     # The service will read environment variables and match them to URLs
@@ -88,6 +88,7 @@ metrics:
   proxy:
     timeout-ms: 5000
     cache-ttl-ms: 60000
+    max-cache-size: 500
 
 eureka:
   client:

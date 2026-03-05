@@ -66,6 +66,7 @@ public class AuthenticationResolver {
                     + nullSafe(config.username()) + "|"
                     + nullSafe(config.password()) + "|"
                     + nullSafe(config.apiKey()) + "|"
+                    + nullSafe(config.headerName()) + "|"
                     + nullSafe(config.bearerToken());
             return sha256Short(material);
         } catch (Exception e) {
