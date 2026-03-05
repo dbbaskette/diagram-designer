@@ -54,11 +54,20 @@ class AuthenticationResolverTest {
     }
 
     @Test
-    void getAuthFingerprintReturnsEmptyForNoAuth() {
+    void getAuthFingerprintReturnsNoAuthSentinelForNoAuth() {
         MockEnvironment environment = new MockEnvironment();
         AuthenticationResolver resolver = new AuthenticationResolver(environment);
 
         String fp = resolver.getAuthFingerprint("https://unknown.example.com/metrics", null);
+        assertEquals("noauth", fp);
+    }
+
+    @Test
+    void getAuthFingerprintReturnsEmptyForMalformedUrl() {
+        MockEnvironment environment = new MockEnvironment();
+        AuthenticationResolver resolver = new AuthenticationResolver(environment);
+
+        String fp = resolver.getAuthFingerprint("not-a-url", null);
         assertEquals("", fp);
     }
 
