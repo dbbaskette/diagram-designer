@@ -151,30 +151,59 @@ const TabsComponent: React.FC<{ component: DashboardComponent; baseClasses: stri
 const renderBarChart = (data: ChartDataPoint[], baseClasses: string, title?: string): React.ReactNode => {
   if (!data.length) return null;
   const maxVal = Math.max(...data.map(d => d.value));
-  const barWidth = Math.max(20, Math.floor(200 / data.length));
+  const chartWidth = Math.max(280, data.length * 72);
+  const chartHeight = 150;
+  const horizontalPadding = 20;
+  const barAreaHeight = 110;
+  const slotWidth = (chartWidth - horizontalPadding * 2) / data.length;
+  const barWidth = Math.max(12, slotWidth * 0.6);
 
   return (
     <div className={`p-4 ${baseClasses}`}>
       {title && <div className="text-sm font-semibold mb-3">{title}</div>}
-      <div className="flex items-end space-x-2" style={{ height: '120px' }}>
-        {data.map((d, i) => {
-          const heightPct = maxVal > 0 ? (d.value / maxVal) * 100 : 0;
-          return (
-            <div key={i} className="flex flex-col items-center flex-1">
-              <div className="text-xs font-medium mb-1">{d.value}</div>
-              <div
-                className="w-full rounded-t"
-                style={{
-                  height: `${heightPct}%`,
-                  backgroundColor: d.color || '#3b82f6',
-                  minHeight: '4px',
-                  maxWidth: `${barWidth}px`,
-                }}
-              />
-              <div className="text-xs text-gray-500 mt-1 truncate w-full text-center">{d.label}</div>
-            </div>
-          );
-        })}
+      <div className="w-full overflow-x-auto">
+        <svg
+          width="100%"
+          height={chartHeight}
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          role="img"
+          aria-label={title || 'Bar chart'}
+        >
+          <line
+            x1={horizontalPadding}
+            y1={chartHeight - 20}
+            x2={chartWidth - horizontalPadding}
+            y2={chartHeight - 20}
+            stroke="#e5e7eb"
+            strokeWidth="1"
+          />
+          {data.map((d, i) => {
+            const barHeight = maxVal > 0 ? (d.value / maxVal) * barAreaHeight : 0;
+            const x = horizontalPadding + i * slotWidth + (slotWidth - barWidth) / 2;
+            const y = chartHeight - 20 - barHeight;
+
+            return (
+              <g key={i}>
+                <rect
+                  x={x}
+                  y={y}
+                  width={barWidth}
+                  height={Math.max(2, barHeight)}
+                  rx="3"
+                  fill={d.color || '#3b82f6'}
+                />
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      <div className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}>
+        {data.map((d, i) => (
+          <div key={i} className="text-center">
+            <div className="text-xs font-medium text-gray-900 truncate" title={d.label}>{d.label}</div>
+            <div className="text-xs text-gray-500">{d.value}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
