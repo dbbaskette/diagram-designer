@@ -138,7 +138,14 @@ class NodeDetailsService {
   }
 
   private isValidDashboardComponent(component: any): boolean {
-    if (typeof component !== 'object' || typeof component.type !== 'string') return false;
+    if (
+      component === null ||
+      typeof component !== 'object' ||
+      Array.isArray(component) ||
+      typeof component.type !== 'string'
+    ) {
+      return false;
+    }
 
     const validTypes = [
       'section', 'rectangle', 'grid', 'metric-card', 'progress-bar', 'feature-weight',
@@ -154,7 +161,11 @@ class NodeDetailsService {
     // Validate tabs have valid structure
     if (component.type === 'tabs' && Array.isArray(component.tabs)) {
       component.tabs = component.tabs.filter((tab: any) =>
-        typeof tab === 'object' && typeof tab.label === 'string' && Array.isArray(tab.components)
+        tab !== null &&
+        typeof tab === 'object' &&
+        !Array.isArray(tab) &&
+        typeof tab.label === 'string' &&
+        Array.isArray(tab.components)
       );
       for (const tab of component.tabs) {
         tab.components = tab.components.filter((c: any) => this.isValidDashboardComponent(c));
@@ -164,7 +175,11 @@ class NodeDetailsService {
     // Validate chart data points
     if (component.type === 'chart' && Array.isArray(component.data)) {
       component.data = component.data.filter((d: any) =>
-        typeof d === 'object' && typeof d.label === 'string' && typeof d.value === 'number'
+        d !== null &&
+        typeof d === 'object' &&
+        !Array.isArray(d) &&
+        typeof d.label === 'string' &&
+        typeof d.value === 'number'
       );
     }
 
@@ -172,18 +187,24 @@ class NodeDetailsService {
     if (component.type === 'table') {
       if (Array.isArray(component.columns)) {
         component.columns = component.columns.filter((col: any) =>
-          typeof col === 'object' && typeof col.header === 'string' && typeof col.field === 'string'
+          col !== null &&
+          typeof col === 'object' &&
+          !Array.isArray(col) &&
+          typeof col.header === 'string' &&
+          typeof col.field === 'string'
         );
       }
       if (Array.isArray(component.rows)) {
-        component.rows = component.rows.filter((row: any) => typeof row === 'object');
+        component.rows = component.rows.filter((row: any) =>
+          row !== null && typeof row === 'object' && !Array.isArray(row)
+        );
       }
     }
 
     // Validate status-indicator status values
-    if (component.type === 'status-indicator' && component.status) {
+    if (component.type === 'status-indicator' && component.status !== undefined) {
       const validStatuses = ['healthy', 'warning', 'critical', 'unknown'];
-      if (!validStatuses.includes(component.status)) {
+      if (typeof component.status !== 'string' || !validStatuses.includes(component.status)) {
         component.status = 'unknown';
       }
     }

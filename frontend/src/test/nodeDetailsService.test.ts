@@ -330,6 +330,94 @@ describe('NodeDetailsService', () => {
     }
   });
 
+  it('validates table columns and rows as plain objects', async () => {
+    const service = await createService();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        title: 'Table Page',
+        customPage: {
+          type: 'components',
+          layout: [
+            {
+              type: 'table',
+              columns: [
+                { header: 'Instance', field: 'instance' },
+                { header: 'Missing field' },
+                null,
+              ],
+              rows: [
+                { instance: 'api-01' },
+                null,
+                ['invalid-array-row'],
+                'invalid-string-row',
+              ],
+            },
+          ],
+        },
+      }),
+    } as Response);
+
+    const result = await service.loadNodeDetails('tablePage');
+    expect(result.status).toBe('success');
+    if (result.status === 'success') {
+      const table = result.config.customPage!.layout![0];
+      expect(table.columns).toHaveLength(1);
+      expect(table.rows).toHaveLength(1);
+      expect(table.columns![0].header).toBe('Instance');
+      expect(table.rows![0].instance).toBe('api-01');
+    }
+  });
+
+  it('strips null dashboard children without throwing', async () => {
+    const service = await createService();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        title: 'Null Entries Page',
+        customPage: {
+          type: 'components',
+          layout: [
+            {
+              type: 'tabs',
+              tabs: [
+                {
+                  label: 'Main',
+                  components: [
+                    {
+                      type: 'chart',
+                      chart_type: 'bar',
+                      data: [
+                        { label: 'Good', value: 10 },
+                        null,
+                        ['not-an-object'],
+                      ],
+                    },
+                    null,
+                  ],
+                },
+                null,
+              ],
+            },
+          ],
+        },
+      }),
+    } as Response);
+
+    const result = await service.loadNodeDetails('nullEntriesPage');
+    expect(result.status).toBe('success');
+    if (result.status === 'success') {
+      const tabs = result.config.customPage!.layout![0];
+      expect(tabs.tabs).toHaveLength(1);
+      expect(tabs.tabs![0].components).toHaveLength(1);
+      const chart = tabs.tabs![0].components[0];
+      expect(chart.data).toHaveLength(1);
+      expect(chart.data![0].label).toBe('Good');
+    }
+  });
+
   it('normalizes invalid status-indicator status to unknown', async () => {
     const service = await createService();
     vi.mocked(fetch).mockResolvedValue({
