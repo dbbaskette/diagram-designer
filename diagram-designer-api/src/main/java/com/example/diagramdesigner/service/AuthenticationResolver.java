@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,6 +43,53 @@ public class AuthenticationResolver {
 
         } catch (Exception e) {
             logger.warn("Error resolving authentication for URL: {}", targetUrl, e);
+        }
+    }
+
+    /**
+     * Returns a short hash summarizing the resolved auth context for the given
+     * URL and node. Used by {@link MetricsProxyService} to scope cache keys so
+     * that identical URLs with different credentials never share a cache entry.
+     */
+    public String getAuthFingerprint(String targetUrl, String nodeName) {
+        try {
+            URI uri = URI.create(targetUrl);
+            String host = uri.getHost();
+            if (host == null) {
+                return "";
+            }
+            AuthConfig config = resolveAuthentication(host, nodeName);
+            if (config == null) {
+                return "";
+            }
+            String material = config.type() + "|"
+                    + nullSafe(config.username()) + "|"
+                    + nullSafe(config.password()) + "|"
+                    + nullSafe(config.apiKey()) + "|"
+                    + nullSafe(config.bearerToken());
+            return sha256Short(material);
+        } catch (Exception e) {
+            logger.warn("Error computing auth fingerprint for URL: {}", targetUrl, e);
+            return "";
+        }
+    }
+
+    private static String nullSafe(String s) {
+        return s != null ? s : "";
+    }
+
+    private static String sha256Short(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            // Use first 8 bytes (16 hex chars) for a compact but collision-resistant fingerprint
+            StringBuilder sb = new StringBuilder(16);
+            for (int i = 0; i < 8; i++) {
+                sb.append(String.format("%02x", hash[i]));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
         }
     }
 

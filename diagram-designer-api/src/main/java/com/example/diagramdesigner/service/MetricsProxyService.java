@@ -52,7 +52,8 @@ public class MetricsProxyService {
     public Mono<ResponseEntity<Object>> proxyRequest(String targetUrl, String nodeName) {
         logger.debug("Proxying request to: {} (node: {})", targetUrl, nodeName);
 
-        String cacheKey = buildCacheKey(targetUrl, nodeName);
+        String authFingerprint = authenticationResolver.getAuthFingerprint(targetUrl, nodeName);
+        String cacheKey = buildCacheKey(targetUrl, nodeName, authFingerprint);
 
         // Check cache first
         if (properties.isEnableCaching()) {
@@ -102,8 +103,9 @@ public class MetricsProxyService {
                         m -> m.values().iterator().next()));
     }
 
-    String buildCacheKey(String targetUrl, String nodeName) {
-        return targetUrl + "\0" + (nodeName != null ? nodeName : "");
+    String buildCacheKey(String targetUrl, String nodeName, String authFingerprint) {
+        return targetUrl + "\0" + (nodeName != null ? nodeName : "")
+                + "\0" + (authFingerprint != null ? authFingerprint : "");
     }
 
     Mono<Object> makeAuthenticatedRequest(String targetUrl, String nodeName) {

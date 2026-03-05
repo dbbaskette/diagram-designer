@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { NodeData } from '../types/diagram';
 import { sanitizeHtml, renderMarkdown } from '../utils/sanitize';
@@ -43,8 +43,26 @@ export interface NodeDetailLink {
   type?: 'primary' | 'secondary' | 'external';
 }
 
+export interface TabConfig {
+  label: string;
+  components: DashboardComponent[];
+}
+
+export interface ChartDataPoint {
+  label: string;
+  value: number;
+  color?: string;
+}
+
+export interface TableColumn {
+  header: string;
+  field: string;
+  align?: 'left' | 'center' | 'right';
+}
+
 export interface DashboardComponent {
-  type: 'section' | 'rectangle' | 'grid' | 'metric-card' | 'progress-bar' | 'feature-weight';
+  type: 'section' | 'rectangle' | 'grid' | 'metric-card' | 'progress-bar' | 'feature-weight'
+    | 'tabs' | 'chart' | 'kpi-card' | 'status-indicator' | 'table' | 'stat-row';
   bg_color?: string;
   text_color?: string;
   border_color?: string;
@@ -58,6 +76,21 @@ export interface DashboardComponent {
   components?: DashboardComponent[];
   grid_cols?: number;
   gap?: string;
+  // tabs
+  tabs?: TabConfig[];
+  // chart
+  chart_type?: 'bar' | 'donut';
+  data?: ChartDataPoint[];
+  // kpi-card
+  trend?: 'up' | 'down' | 'flat';
+  trend_value?: string;
+  subtitle?: string;
+  icon?: string;
+  // status-indicator
+  status?: 'healthy' | 'warning' | 'critical' | 'unknown';
+  // table
+  columns?: TableColumn[];
+  rows?: Record<string, string>[];
 }
 
 // Color mapping for consistent styling
@@ -81,6 +114,135 @@ const getColorClasses = (color?: string) => {
   };
 
   return colorMap[color] || color;
+};
+
+// Tabs wrapper component (needs state for active tab)
+const TabsComponent: React.FC<{ component: DashboardComponent; baseClasses: string }> = ({ component, baseClasses }) => {
+  const [activeTab, setActiveTab] = useState(0);
+  const tabs = component.tabs || [];
+
+  return (
+    <div className={`rounded-lg border ${baseClasses}`}>
+      <div className="flex border-b overflow-x-auto">
+        {tabs.map((tab, tabIndex) => (
+          <button
+            key={tabIndex}
+            className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+              activeTab === tabIndex
+                ? 'border-b-2 border-blue-500 text-blue-600 bg-blue-50'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+            onClick={() => setActiveTab(tabIndex)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="p-4">
+        {tabs[activeTab]?.components?.map((child, childIndex) =>
+          renderDashboardComponent(child, childIndex)
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Simple SVG bar chart renderer
+const renderBarChart = (data: ChartDataPoint[], baseClasses: string, title?: string): React.ReactNode => {
+  if (!data.length) return null;
+  const maxVal = Math.max(...data.map(d => d.value));
+  const barWidth = Math.max(20, Math.floor(200 / data.length));
+
+  return (
+    <div className={`p-4 ${baseClasses}`}>
+      {title && <div className="text-sm font-semibold mb-3">{title}</div>}
+      <div className="flex items-end space-x-2" style={{ height: '120px' }}>
+        {data.map((d, i) => {
+          const heightPct = maxVal > 0 ? (d.value / maxVal) * 100 : 0;
+          return (
+            <div key={i} className="flex flex-col items-center flex-1">
+              <div className="text-xs font-medium mb-1">{d.value}</div>
+              <div
+                className="w-full rounded-t"
+                style={{
+                  height: `${heightPct}%`,
+                  backgroundColor: d.color || '#3b82f6',
+                  minHeight: '4px',
+                  maxWidth: `${barWidth}px`,
+                }}
+              />
+              <div className="text-xs text-gray-500 mt-1 truncate w-full text-center">{d.label}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// Simple SVG donut chart renderer
+const renderDonutChart = (data: ChartDataPoint[], baseClasses: string, title?: string): React.ReactNode => {
+  if (!data.length) return null;
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  const defaultColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  let cumulativeOffset = 0;
+
+  return (
+    <div className={`p-4 ${baseClasses}`}>
+      {title && <div className="text-sm font-semibold mb-3">{title}</div>}
+      <div className="flex items-center justify-center space-x-6">
+        <svg width="120" height="120" viewBox="0 0 100 100">
+          {data.map((d, i) => {
+            const pct = total > 0 ? d.value / total : 0;
+            const dashLength = pct * circumference;
+            const dashOffset = -cumulativeOffset;
+            cumulativeOffset += dashLength;
+            return (
+              <circle
+                key={i}
+                cx="50" cy="50" r={radius}
+                fill="none"
+                stroke={d.color || defaultColors[i % defaultColors.length]}
+                strokeWidth="16"
+                strokeDasharray={`${dashLength} ${circumference - dashLength}`}
+                strokeDashoffset={dashOffset}
+                transform="rotate(-90 50 50)"
+              />
+            );
+          })}
+        </svg>
+        <div className="space-y-1">
+          {data.map((d, i) => (
+            <div key={i} className="flex items-center space-x-2 text-sm">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: d.color || defaultColors[i % defaultColors.length] }}
+              />
+              <span>{d.label}: {d.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Status color mapping
+const statusColorMap: Record<string, { bg: string; text: string; dot: string }> = {
+  healthy: { bg: 'bg-green-50', text: 'text-green-800', dot: 'bg-green-500' },
+  warning: { bg: 'bg-yellow-50', text: 'text-yellow-800', dot: 'bg-yellow-500' },
+  critical: { bg: 'bg-red-50', text: 'text-red-800', dot: 'bg-red-500' },
+  unknown: { bg: 'bg-gray-50', text: 'text-gray-800', dot: 'bg-gray-400' },
+};
+
+// Trend arrow rendering
+const trendArrow = (trend?: string) => {
+  if (trend === 'up') return <span className="text-green-500">&#9650;</span>;
+  if (trend === 'down') return <span className="text-red-500">&#9660;</span>;
+  if (trend === 'flat') return <span className="text-gray-400">&#9654;</span>;
+  return null;
 };
 
 // Component renderer
@@ -179,6 +341,86 @@ const renderDashboardComponent = (component: DashboardComponent, index: number):
               style={{ width: `${component.percentage || 0}%` }}
             ></div>
           </div>
+        </div>
+      );
+
+    case 'tabs':
+      return <TabsComponent key={index} component={component} baseClasses={baseClasses} />;
+
+    case 'chart':
+      if (component.chart_type === 'donut') {
+        return <React.Fragment key={index}>{renderDonutChart(component.data || [], baseClasses, component.title)}</React.Fragment>;
+      }
+      return <React.Fragment key={index}>{renderBarChart(component.data || [], baseClasses, component.title)}</React.Fragment>;
+
+    case 'kpi-card':
+      return (
+        <div key={index} className={`rounded-lg p-4 border ${baseClasses}`}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-sm font-medium text-gray-500">{component.key}</div>
+            {component.icon && <span className="text-lg">{component.icon}</span>}
+          </div>
+          <div className={`text-3xl font-bold ${component.value_class || ''}`}>{component.value}</div>
+          {(component.trend || component.subtitle) && (
+            <div className="flex items-center space-x-1 mt-1 text-sm">
+              {trendArrow(component.trend)}
+              <span className={
+                component.trend === 'up' ? 'text-green-600' :
+                component.trend === 'down' ? 'text-red-600' : 'text-gray-500'
+              }>{component.trend_value}</span>
+              {component.subtitle && <span className="text-gray-400 ml-1">{component.subtitle}</span>}
+            </div>
+          )}
+        </div>
+      );
+
+    case 'status-indicator': {
+      const colors = statusColorMap[component.status || 'unknown'];
+      return (
+        <div key={index} className={`flex items-center p-3 rounded-lg ${colors.bg} ${baseClasses}`}>
+          <div className={`w-3 h-3 rounded-full mr-3 ${colors.dot} ${component.status === 'healthy' ? 'animate-pulse' : ''}`} />
+          <div>
+            <div className={`font-semibold ${colors.text}`}>{component.key}</div>
+            {component.value && <div className={`text-sm ${colors.text} opacity-75`}>{component.value}</div>}
+          </div>
+        </div>
+      );
+    }
+
+    case 'table':
+      return (
+        <div key={index} className={`overflow-x-auto rounded-lg border ${baseClasses}`}>
+          {component.title && <div className="text-sm font-semibold p-3 border-b bg-gray-50">{component.title}</div>}
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b">
+                {(component.columns || []).map((col, ci) => (
+                  <th key={ci} className={`px-4 py-2 font-medium text-gray-700 text-${col.align || 'left'}`}>
+                    {col.header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {(component.rows || []).map((row, ri) => (
+                <tr key={ri} className="border-b last:border-b-0 hover:bg-gray-50">
+                  {(component.columns || []).map((col, ci) => (
+                    <td key={ci} className={`px-4 py-2 text-${col.align || 'left'}`}>
+                      {row[col.field] || ''}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+
+    case 'stat-row':
+      return (
+        <div key={index} className={`flex items-center justify-between py-2 px-3 ${baseClasses}`}>
+          <span className="text-sm text-gray-600">{component.key}</span>
+          <span className={`font-medium ${component.value_class || ''}`}>{component.value}</span>
         </div>
       );
 
