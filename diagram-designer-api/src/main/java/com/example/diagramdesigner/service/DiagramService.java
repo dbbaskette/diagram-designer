@@ -68,6 +68,14 @@ public class DiagramService {
 
     public Diagram updateDiagram(Long id, DiagramRequest dto) {
         Diagram diagram = getDiagram(id);
+
+        diagramRepository.findByName(dto.getName())
+                .filter(existing -> existing.getId() == null || !existing.getId().equals(id))
+                .ifPresent(existing -> {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "Diagram already exists with name: " + dto.getName());
+                });
+
         diagram.setName(dto.getName());
         diagram.setTitle(dto.getTitle());
         diagram.setConfig(dto.getConfig());

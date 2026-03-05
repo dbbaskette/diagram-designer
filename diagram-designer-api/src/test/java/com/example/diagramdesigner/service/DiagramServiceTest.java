@@ -99,6 +99,8 @@ class DiagramServiceTest {
         dto.setTitle("New Diagram");
         dto.setConfig("{\"nodes\":[]}");
 
+        when(diagramRepository.findByName("new-diagram")).thenReturn(Optional.empty());
+
         when(diagramRepository.save(any(Diagram.class))).thenAnswer(inv -> {
             Diagram d = inv.getArgument(0);
             d.setId(1L);
@@ -113,8 +115,26 @@ class DiagramServiceTest {
     }
 
     @Test
+    void createDiagram_duplicateName_throws409() {
+        DiagramRequest dto = new DiagramRequest();
+        dto.setName("existing");
+        dto.setTitle("Existing");
+        dto.setConfig("{}");
+
+        when(diagramRepository.findByName("existing"))
+                .thenReturn(Optional.of(makeDiagram(5L, "existing", "Existing")));
+
+        assertThatThrownBy(() -> diagramService.createDiagram(dto))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409");
+
+        verify(diagramRepository, never()).save(any(Diagram.class));
+    }
+
+    @Test
     void updateDiagram_updatesExisting() {
         when(diagramRepository.findById(1L)).thenReturn(Optional.of(makeDiagram(1L, "old", "Old")));
+        when(diagramRepository.findByName("new-name")).thenReturn(Optional.empty());
         when(diagramRepository.save(any(Diagram.class))).thenAnswer(inv -> inv.getArgument(0));
 
         DiagramRequest dto = new DiagramRequest();
@@ -127,6 +147,24 @@ class DiagramServiceTest {
         assertThat(result.getName()).isEqualTo("new-name");
         assertThat(result.getTitle()).isEqualTo("New Title");
         assertThat(result.getConfig()).isEqualTo("{\"updated\":true}");
+    }
+
+    @Test
+    void updateDiagram_duplicateNameOnDifferentDiagram_throws409() {
+        when(diagramRepository.findById(1L)).thenReturn(Optional.of(makeDiagram(1L, "old", "Old")));
+        when(diagramRepository.findByName("existing"))
+                .thenReturn(Optional.of(makeDiagram(2L, "existing", "Existing")));
+
+        DiagramRequest dto = new DiagramRequest();
+        dto.setName("existing");
+        dto.setTitle("Updated Title");
+        dto.setConfig("{}");
+
+        assertThatThrownBy(() -> diagramService.updateDiagram(1L, dto))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409");
+
+        verify(diagramRepository, never()).save(any(Diagram.class));
     }
 
     @Test
@@ -144,16 +182,17 @@ class DiagramServiceTest {
 
     @Test
     void deleteDiagram_existingId() {
-        when(diagramRepository.existsById(1L)).thenReturn(true);
+        Diagram existing = makeDiagram(1L, "d1", "Diagram 1");
+        when(diagramRepository.findById(1L)).thenReturn(Optional.of(existing));
 
         diagramService.deleteDiagram(1L);
 
-        verify(diagramRepository).deleteById(1L);
+        verify(diagramRepository).delete(existing);
     }
 
     @Test
     void deleteDiagram_notFound_throws404() {
-        when(diagramRepository.existsById(99L)).thenReturn(false);
+        when(diagramRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> diagramService.deleteDiagram(99L))
                 .isInstanceOf(ResponseStatusException.class)

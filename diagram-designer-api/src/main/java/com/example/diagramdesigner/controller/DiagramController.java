@@ -274,9 +274,10 @@ public class DiagramController {
     }
 
     private DiagramResponse toFullResponse(Diagram diagram) {
+        String processedConfig = diagramService.getProcessedConfig(diagram);
         return new DiagramResponse(
                 diagram.getId(), diagram.getName(), diagram.getTitle(),
-                diagram.getConfig(), diagram.getCreatedAt(), diagram.getUpdatedAt());
+                processedConfig, diagram.getCreatedAt(), diagram.getUpdatedAt());
     }
 
     // Cache structure

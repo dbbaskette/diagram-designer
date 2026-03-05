@@ -1,6 +1,8 @@
 package com.example.diagramdesigner.controller;
 
 import com.example.diagramdesigner.config.CacheProperties;
+import com.example.diagramdesigner.dto.DiagramRequest;
+import com.example.diagramdesigner.dto.DiagramResponse;
 import com.example.diagramdesigner.model.Diagram;
 import com.example.diagramdesigner.service.ConfigsDirectoryResolver;
 import com.example.diagramdesigner.service.ConfigurationProcessor;
@@ -11,11 +13,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,6 +65,56 @@ class DiagramControllerListTest {
         // Should not fail — returns whatever the file scan finds (may be empty list or file-based results)
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody()).isNotNull();
+    }
+
+    @Test
+    void createDbDiagram_returnsProcessedConfig() {
+        Diagram created = makeDiagram("new-diagram", "New Diagram");
+        created.setId(1L);
+        created.setConfig("{\"url\":\"${HOST}\"}");
+
+        when(diagramService.createDiagram(any(DiagramRequest.class))).thenReturn(created);
+        when(diagramService.getProcessedConfig(created)).thenReturn("{\"url\":\"https://processed\"}");
+
+        DiagramRequest request = new DiagramRequest();
+        request.setName("new-diagram");
+        request.setTitle("New Diagram");
+        request.setConfig("{\"url\":\"${HOST}\"}");
+
+        MockHttpServletRequest servletRequest = new MockHttpServletRequest("POST", "/api/diagrams/db");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(servletRequest));
+
+        ResponseEntity<DiagramResponse> response;
+        try {
+            response = controller.createDbDiagram(request);
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+
+        assertThat(response.getStatusCode().value()).isEqualTo(201);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getConfig()).isEqualTo("{\"url\":\"https://processed\"}");
+    }
+
+    @Test
+    void updateDbDiagram_returnsProcessedConfig() {
+        Diagram updated = makeDiagram("existing", "Existing");
+        updated.setId(7L);
+        updated.setConfig("{\"target\":\"${my-service}\"}");
+
+        when(diagramService.updateDiagram(any(Long.class), any(DiagramRequest.class))).thenReturn(updated);
+        when(diagramService.getProcessedConfig(updated)).thenReturn("{\"target\":\"https://service\"}");
+
+        DiagramRequest request = new DiagramRequest();
+        request.setName("existing");
+        request.setTitle("Existing");
+        request.setConfig("{\"target\":\"${my-service}\"}");
+
+        ResponseEntity<DiagramResponse> response = controller.updateDbDiagram(7L, request);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getConfig()).isEqualTo("{\"target\":\"https://service\"}");
     }
 
     private Diagram makeDiagram(String name, String title) {
