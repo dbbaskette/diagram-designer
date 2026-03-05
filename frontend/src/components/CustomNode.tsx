@@ -8,6 +8,7 @@ import { nodeDetailsService } from '../services/nodeDetailsService';
 import { useMetrics } from '../context/MetricsContext';
 import { getNodeStatusClass } from '../utils/nodeStatus';
 import type { NodeStatus } from '../utils/nodeStatus';
+import { resolveInterval } from '../utils/interval';
 
 // Utility function to get nested object values by path (e.g., "measurements[0].value")
 const getNestedValue = (obj: any, path: string): any => {
@@ -23,13 +24,24 @@ const getNestedValue = (obj: any, path: string): any => {
 };
 
 // Component for individual metric rows
-const MetricRow: React.FC<{ metric: DataGridItem; nodeName: string }> = memo(({ metric, nodeName }) => {
+const MetricRow: React.FC<{
+  metric: DataGridItem;
+  nodeName: string;
+  nodeIntervalMs?: number;
+  globalIntervalMs?: number;
+}> = memo(({ metric, nodeName, nodeIntervalMs, globalIntervalMs }) => {
   const [value, setValue] = useState<string>('Loading...');
   const [error, setError] = useState<boolean>(false);
   const { registerMetric } = useMetrics();
 
   useEffect(() => {
     const proxyUrl = buildMetricsUrl(metric.url, nodeName);
+    const resolvedIntervalMs = resolveInterval(
+      metric.pollIntervalMs,
+      nodeIntervalMs,
+      globalIntervalMs,
+      `metric ${nodeName}:${metric.label}`
+    );
 
     const unregister = registerMetric(
       proxyUrl,
@@ -62,11 +74,20 @@ const MetricRow: React.FC<{ metric: DataGridItem; nodeName: string }> = memo(({ 
           setError(true);
         }
       },
-      metric.pollIntervalMs
+      resolvedIntervalMs
     );
 
     return unregister;
-  }, [metric.url, metric.valueField, metric.pollIntervalMs, nodeName, registerMetric]);
+  }, [
+    metric.url,
+    metric.valueField,
+    metric.pollIntervalMs,
+    metric.label,
+    nodeName,
+    nodeIntervalMs,
+    globalIntervalMs,
+    registerMetric,
+  ]);
 
   return (
     <div className="diagram-node-metric-row">
@@ -109,7 +130,12 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
 
     const proxyUrl = buildMetricsUrl(data.status.url, data.name);
 
-    const statusIntervalMs = data.status.updateInterval || data.pollIntervalMs;
+    const statusIntervalMs = resolveInterval(
+      data.status.updateInterval,
+      data.pollIntervalMs,
+      data.config.updateInterval,
+      `status ${data.name}`
+    );
 
     const unregister = registerMetric(
       proxyUrl,
@@ -148,7 +174,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
     );
 
     return unregister;
-  }, [data.status, data.name, data.pollIntervalMs, registerMetric]);
+  }, [data.status, data.name, data.pollIntervalMs, data.config.updateInterval, registerMetric]);
 
   // Modal functionality
   const handleNodeClick = async (event: React.MouseEvent) => {
@@ -295,7 +321,13 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
       {/* Metrics Table with Grid Lines - Below info */}
       <div className="diagram-node-metrics-grid">
         {data.dataGrid.map((item, index) => (
-          <MetricRow key={index} metric={item} nodeName={data.name} />
+          <MetricRow
+            key={index}
+            metric={item}
+            nodeName={data.name}
+            nodeIntervalMs={data.pollIntervalMs}
+            globalIntervalMs={data.config.updateInterval}
+          />
         ))}
       </div>
 
