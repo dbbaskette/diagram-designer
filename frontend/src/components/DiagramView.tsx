@@ -49,6 +49,19 @@ interface DiagramViewProps {
   initialConfig?: DiagramConfig | null;
 }
 
+const validHealthFilters: HealthFilter[] = ['all', 'up', 'down', 'unknown'];
+
+const getInitialSearchQuery = (): string => {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('search') ?? '';
+};
+
+const getInitialHealthFilter = (): HealthFilter => {
+  const params = new URLSearchParams(window.location.search);
+  const value = params.get('health');
+  return validHealthFilters.includes(value as HealthFilter) ? (value as HealthFilter) : 'all';
+};
+
 const readStoredPinnedNodeIds = (diagramName: string): { pins: Set<string>; hasStoredValue: boolean } => {
   const keys = [`diagram-pins-${diagramName}`, `diagram-pinned-${diagramName}`];
 
@@ -162,8 +175,8 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
   const [config, setConfig] = useState<DiagramConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [pinnedNodeIds, setPinnedNodeIds] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
-  const [healthFilter, setHealthFilter] = useState<HealthFilter>('all');
+  const [searchQuery, setSearchQuery] = useState(getInitialSearchQuery);
+  const [healthFilter, setHealthFilter] = useState<HealthFilter>(getInitialHealthFilter);
   const [nodeStatuses, setNodeStatuses] = useState<Map<string, NodeStatus>>(new Map());
   const dragPersistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -269,6 +282,7 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
             ...node,
             config: data.config,
             showCoordinates: showCoordinates,
+            dimmed: false,
             pinned: pinnedForBuild.has(node.name),
             onTogglePin: togglePinNode,
             onStatusChange: handleNodeStatusChange,
@@ -344,6 +358,26 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
   useEffect(() => {
     setEdges(memoizedFlowEdges);
   }, [memoizedFlowEdges, setEdges]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (searchQuery.trim()) {
+      params.set('search', searchQuery.trim());
+    } else {
+      params.delete('search');
+    }
+
+    if (healthFilter !== 'all') {
+      params.set('health', healthFilter);
+    } else {
+      params.delete('health');
+    }
+
+    const queryString = params.toString();
+    const nextUrl = `${window.location.pathname}${queryString ? `?${queryString}` : ''}${window.location.hash}`;
+    window.history.replaceState(null, '', nextUrl);
+  }, [searchQuery, healthFilter]);
 
   // Update node data when pinnedNodeIds changes
   useEffect(() => {

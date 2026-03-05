@@ -101,6 +101,7 @@ export interface NodeData extends DiagramNode {
     };
   };
   showCoordinates?: boolean;
+  dimmed?: boolean;
   onTogglePin?: (nodeId: string) => void;
   onStatusChange?: (nodeId: string, status: NodeStatus) => void;
 }

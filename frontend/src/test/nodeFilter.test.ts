@@ -97,37 +97,48 @@ describe('getVisibleNodeIds', () => {
 });
 
 describe('applyNodeVisibility', () => {
-  it('sets hidden=false for visible nodes and hidden=true for others', () => {
+  it('dims non-matching nodes instead of hiding them', () => {
     const nodes = [makeNode('a'), makeNode('b'), makeNode('c')];
     const visible = new Set(['a', 'c']);
     const result = applyNodeVisibility(nodes, visible);
 
     expect(result[0].hidden).toBe(false);
-    expect(result[1].hidden).toBe(true);
+    expect(result[1].hidden).toBe(false);
     expect(result[2].hidden).toBe(false);
+
+    expect(result[0].style?.opacity).toBe(1);
+    expect(result[1].style?.opacity).toBe(0.5);
+    expect(result[2].style?.opacity).toBe(1);
+
+    expect(result[0].data.dimmed).toBe(false);
+    expect(result[1].data.dimmed).toBe(true);
+    expect(result[2].data.dimmed).toBe(false);
   });
 });
 
 describe('applyEdgeVisibility', () => {
-  it('hides edges where source is hidden', () => {
+  it('dims edges where source is dimmed', () => {
     const edges = [makeEdge('a', 'b')];
     const visible = new Set(['b']);
     const result = applyEdgeVisibility(edges, visible);
-    expect(result[0].hidden).toBe(true);
+    expect(result[0].hidden).toBe(false);
+    expect(result[0].style?.opacity).toBe(0.35);
   });
 
-  it('hides edges where target is hidden', () => {
+  it('dims edges where target is dimmed', () => {
     const edges = [makeEdge('a', 'b')];
     const visible = new Set(['a']);
     const result = applyEdgeVisibility(edges, visible);
-    expect(result[0].hidden).toBe(true);
+    expect(result[0].hidden).toBe(false);
+    expect(result[0].style?.opacity).toBe(0.35);
   });
 
-  it('shows edges where both source and target are visible', () => {
+  it('keeps full opacity when both source and target are visible', () => {
     const edges = [makeEdge('a', 'b')];
     const visible = new Set(['a', 'b']);
     const result = applyEdgeVisibility(edges, visible);
     expect(result[0].hidden).toBe(false);
+    expect(result[0].style?.opacity).toBe(1);
   });
 });
 

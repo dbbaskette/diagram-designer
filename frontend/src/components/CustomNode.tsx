@@ -278,7 +278,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
   const outputHandleElements = generateHandles(outputHandles, 'source', 'output', Position.Right);
 
   return (
-    <>
+    <div style={{ opacity: data.dimmed ? 0.5 : 1 }}>
       {/* Input Handles - Configurable number */}
       {inputHandleElements}
 
@@ -381,7 +381,7 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
         nodeData={data}
         nodeDetails={nodeDetails}
       />
-    </>
+    </div>
   );
 });
 

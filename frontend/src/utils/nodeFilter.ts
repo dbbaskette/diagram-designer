@@ -41,23 +41,43 @@ export function getVisibleNodeIds(
 }
 
 /**
- * Applies visibility to nodes by setting the `hidden` property.
+ * Applies visibility to nodes by dimming non-matching nodes.
  */
 export function applyNodeVisibility(nodes: Node[], visibleIds: Set<string>): Node[] {
-  return nodes.map((node) => ({
-    ...node,
-    hidden: !visibleIds.has(node.id),
-  }));
+  return nodes.map((node) => {
+    const isVisible = visibleIds.has(node.id);
+
+    return {
+      ...node,
+      hidden: false,
+      style: {
+        ...node.style,
+        opacity: isVisible ? 1 : 0.5,
+      },
+      data: {
+        ...node.data,
+        dimmed: !isVisible,
+      },
+    };
+  });
 }
 
 /**
- * Hides edges where either source or target is hidden.
+ * Dims edges where either source or target is dimmed.
  */
 export function applyEdgeVisibility(edges: Edge[], visibleNodeIds: Set<string>): Edge[] {
-  return edges.map((edge) => ({
-    ...edge,
-    hidden: !visibleNodeIds.has(edge.source) || !visibleNodeIds.has(edge.target),
-  }));
+  return edges.map((edge) => {
+    const isVisible = visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target);
+
+    return {
+      ...edge,
+      hidden: false,
+      style: {
+        ...edge.style,
+        opacity: isVisible ? 1 : 0.35,
+      },
+    };
+  });
 }
 
 /**

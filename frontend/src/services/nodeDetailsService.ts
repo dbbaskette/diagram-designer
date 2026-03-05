@@ -1,4 +1,4 @@
-import type { NodeDetailConfig, DashboardComponent } from '../components/NodeDetailModal';
+import type { NodeDetailConfig } from '../components/NodeDetailModal';
 import { buildApiUrl, log } from '../config/appConfig';
 
 export type NodeDetailsResult =
