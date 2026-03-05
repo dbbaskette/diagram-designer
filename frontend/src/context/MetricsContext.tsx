@@ -109,6 +109,12 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const priorityRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingPriorityNodesRef = useRef<Set<string>>(new Set());
 
+  const safeFetchBatch = useCallback((requests: Map<string, MetricRequest>, source: string) => {
+    void fetchBatch(requests).catch((error) => {
+      log.debug(`[MetricsContext] ${source} batch error:`, error);
+    });
+  }, []);
+
   const triggerPriorityRefresh = useCallback(() => {
     const pendingNodes = pendingPriorityNodesRef.current;
     if (pendingNodes.size === 0) return;
@@ -121,11 +127,11 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         Array.from(pendingNodes),
         `(${neighborRequests.size} metrics)`
       );
-      fetchBatch(neighborRequests);
+      safeFetchBatch(neighborRequests, 'Priority refresh');
     }
 
     pendingPriorityNodesRef.current = new Set();
-  }, []);
+  }, [safeFetchBatch]);
 
   const schedulePriorityRefresh = useCallback((failedNodeName: string) => {
     const graph = dependencyGraphRef.current;
@@ -174,13 +180,13 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
           const currentGroups = buildIntervalGroups(requestsRef.current);
           const groupRequests = currentGroups.get(intervalMs);
           if (groupRequests && groupRequests.size > 0) {
-            fetchBatch(groupRequests);
+            safeFetchBatch(groupRequests, 'Scheduled refresh');
           }
         }, intervalMs);
         intervalsRef.current.set(intervalMs, timerId);
       }
     });
-  }, []);
+  }, [safeFetchBatch]);
 
   // Cleanup all intervals on unmount
   useEffect(() => {
@@ -200,7 +206,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     initialTimeoutRef.current = setTimeout(() => {
       if (requestsRef.current.size > 0) {
-        fetchBatch(new Map(requestsRef.current));
+        safeFetchBatch(new Map(requestsRef.current), 'Initial refresh');
       }
     }, 1000);
 
@@ -209,7 +215,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         clearTimeout(initialTimeoutRef.current);
       }
     };
-  }, []);
+  }, [safeFetchBatch]);
 
   const registerMetric = useCallback((
     url: string,
@@ -226,6 +232,7 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       schedulePriorityRefresh(node);
     };
 
+    // Registering the same key again intentionally replaces the previous callbacks.
     requestsRef.current.set(key, { url, node, key, intervalMs, callback, errorCallback: wrappedErrorCallback });
     syncIntervals();
 

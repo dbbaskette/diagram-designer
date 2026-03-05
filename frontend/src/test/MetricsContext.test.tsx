@@ -445,4 +445,34 @@ describe('MetricsProvider', () => {
     // Only the initial fetch + the interval, no priority fetch
     expect(fetch).toHaveBeenCalledTimes(1);
   });
+
+  it('does not trigger priority refresh when failed node has no neighbors', async () => {
+    const errorCb = vi.fn();
+    const { result } = renderHook(() => useMetrics(), { wrapper });
+
+    const isolatedGraph = buildDependencyGraph([makeNode('isolated')]);
+
+    act(() => {
+      result.current.setDependencyGraph(isolatedGraph);
+      result.current.registerMetric('http://example.com/isolated', 'isolated', vi.fn(), errorCb, 5000);
+    });
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response('', { status: 500 })
+    );
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(errorCb).toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    // No additional priority fetch should occur because the node has no neighbors.
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
 });
