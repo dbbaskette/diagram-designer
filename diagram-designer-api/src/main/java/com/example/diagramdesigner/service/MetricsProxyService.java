@@ -24,7 +24,8 @@ import java.util.concurrent.ConcurrentMap;
 public class MetricsProxyService {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsProxyService.class);
-    private static final int DEFAULT_MAX_CACHE_SIZE = 256;
+    // Null byte cannot appear in valid URLs or node names, making it a collision-free separator
+    private static final String CACHE_KEY_SEPARATOR = "\0";
 
     private final WebClient webClient;
     private final MetricsProxyProperties properties;
@@ -44,7 +45,7 @@ public class MetricsProxyService {
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024)) // 1MB
                 .build();
         this.cache = Caffeine.newBuilder()
-                .maximumSize(properties.getCacheMaxSize() > 0 ? properties.getCacheMaxSize() : DEFAULT_MAX_CACHE_SIZE)
+                .maximumSize(properties.getCacheMaxSize())
                 .expireAfterWrite(Duration.ofMillis(properties.getCacheTtlMs()))
                 .build();
     }
@@ -64,7 +65,11 @@ public class MetricsProxyService {
             }
         }
 
-        // Deduplicate in-flight requests for the same cache key
+        // Deduplicate in-flight requests for the same cache key.
+        // Note: the in-flight entry is created eagerly (before subscription). The doFinally cleanup
+        // fires when the cached Mono terminates, so very late subscribers after termination will
+        // still receive the cached value/error, but a new upstream request may be created for
+        // subsequent callers. This is an acceptable trade-off for the current requirements.
         Mono<Object> shared = inFlight.computeIfAbsent(cacheKey, k ->
                 makeAuthenticatedRequest(targetUrl, nodeName)
                         .doOnNext(response -> {
@@ -103,11 +108,13 @@ public class MetricsProxyService {
                         m -> m.values().iterator().next()));
     }
 
+    // Visible for testing (package-private to allow Mockito spy in tests)
     String buildCacheKey(String targetUrl, String nodeName, String authFingerprint) {
-        return targetUrl + "\0" + (nodeName != null ? nodeName : "")
-                + "\0" + (authFingerprint != null ? authFingerprint : "");
+        return targetUrl + CACHE_KEY_SEPARATOR + (nodeName != null ? nodeName : "")
+                + CACHE_KEY_SEPARATOR + (authFingerprint != null ? authFingerprint : "");
     }
 
+    // Visible for testing (package-private to allow Mockito spy in tests)
     Mono<Object> makeAuthenticatedRequest(String targetUrl, String nodeName) {
         try {
             // Build the request with authentication

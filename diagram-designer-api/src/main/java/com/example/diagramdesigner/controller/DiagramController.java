@@ -1,5 +1,6 @@
 package com.example.diagramdesigner.controller;
 
+import com.example.diagramdesigner.config.CacheProperties;
 import com.example.diagramdesigner.service.ConfigurationProcessor;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -33,18 +34,16 @@ import java.util.stream.Stream;
 public class DiagramController {
 
     private static final Logger logger = LoggerFactory.getLogger(DiagramController.class);
-    private static final int CONFIG_CACHE_MAX_SIZE = 64;
-    private static final Duration CONFIG_CACHE_TTL = Duration.ofMinutes(10);
 
     private final ConfigurationProcessor configurationProcessor;
     private final Cache<String, CachedConfig> configCache;
 
     @Autowired
-    public DiagramController(ConfigurationProcessor configurationProcessor) {
+    public DiagramController(ConfigurationProcessor configurationProcessor, CacheProperties cacheProperties) {
         this.configurationProcessor = configurationProcessor;
         this.configCache = Caffeine.newBuilder()
-                .maximumSize(CONFIG_CACHE_MAX_SIZE)
-                .expireAfterWrite(CONFIG_CACHE_TTL)
+                .maximumSize(cacheProperties.getDiagram().getMaxSize())
+                .expireAfterWrite(Duration.ofSeconds(cacheProperties.getDiagram().getTtlSeconds()))
                 .build();
     }
 
@@ -210,7 +209,6 @@ public class DiagramController {
             this.lastModified = lastModified;
         }
     }
-
 
     /**
      * Find the configs directory, trying multiple possible locations
