@@ -121,4 +121,187 @@ describe('NodeDetailModal', () => {
 
     expect(container.innerHTML).toBe('');
   });
+
+  it('renders kpi-card components with trend indicators', () => {
+    const config: NodeDetailConfig = {
+      title: 'KPI Test',
+      customPage: {
+        type: 'components',
+        layout: [
+          {
+            type: 'kpi-card',
+            key: 'Requests/sec',
+            value: '12,847',
+            trend: 'up',
+            trend_value: '+8.3%',
+            subtitle: 'vs last hour',
+          },
+        ],
+      },
+    };
+
+    render(
+      <NodeDetailModal
+        isOpen={true}
+        onClose={() => {}}
+        nodeData={baseNodeData}
+        nodeDetails={config}
+      />
+    );
+
+    expect(document.body.textContent).toContain('12,847');
+    expect(document.body.textContent).toContain('Requests/sec');
+    expect(document.body.textContent).toContain('+8.3%');
+  });
+
+  it('renders tabs component with switchable panels', () => {
+    const config: NodeDetailConfig = {
+      title: 'Tabs Test',
+      customPage: {
+        type: 'components',
+        layout: [
+          {
+            type: 'tabs',
+            tabs: [
+              {
+                label: 'Tab One',
+                components: [
+                  { type: 'stat-row', key: 'Version', value: '2.0' },
+                ],
+              },
+              {
+                label: 'Tab Two',
+                components: [
+                  { type: 'stat-row', key: 'Region', value: 'us-east-1' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    render(
+      <NodeDetailModal
+        isOpen={true}
+        onClose={() => {}}
+        nodeData={baseNodeData}
+        nodeDetails={config}
+      />
+    );
+
+    // Tab buttons should be rendered
+    expect(document.body.textContent).toContain('Tab One');
+    expect(document.body.textContent).toContain('Tab Two');
+    // First tab content should be visible by default
+    expect(document.body.textContent).toContain('Version');
+    expect(document.body.textContent).toContain('2.0');
+  });
+
+  it('renders status-indicator components', () => {
+    const config: NodeDetailConfig = {
+      title: 'Status Test',
+      customPage: {
+        type: 'components',
+        layout: [
+          {
+            type: 'status-indicator',
+            status: 'healthy',
+            key: 'Gateway Core',
+            value: 'All instances responding',
+          },
+          {
+            type: 'status-indicator',
+            status: 'warning',
+            key: 'Rate Limiter',
+            value: 'Near threshold',
+          },
+        ],
+      },
+    };
+
+    render(
+      <NodeDetailModal
+        isOpen={true}
+        onClose={() => {}}
+        nodeData={baseNodeData}
+        nodeDetails={config}
+      />
+    );
+
+    expect(document.body.textContent).toContain('Gateway Core');
+    expect(document.body.textContent).toContain('Rate Limiter');
+    expect(document.body.textContent).toContain('Near threshold');
+  });
+
+  it('renders table components with columns and rows', () => {
+    const config: NodeDetailConfig = {
+      title: 'Table Test',
+      customPage: {
+        type: 'components',
+        layout: [
+          {
+            type: 'table',
+            title: 'Instances',
+            columns: [
+              { header: 'Name', field: 'name' },
+              { header: 'CPU', field: 'cpu', align: 'right' },
+            ],
+            rows: [
+              { name: 'gw-01', cpu: '34%' },
+              { name: 'gw-02', cpu: '41%' },
+            ],
+          },
+        ],
+      },
+    };
+
+    render(
+      <NodeDetailModal
+        isOpen={true}
+        onClose={() => {}}
+        nodeData={baseNodeData}
+        nodeDetails={config}
+      />
+    );
+
+    expect(document.body.textContent).toContain('Instances');
+    expect(document.body.textContent).toContain('Name');
+    expect(document.body.textContent).toContain('CPU');
+    expect(document.body.textContent).toContain('gw-01');
+    expect(document.body.textContent).toContain('34%');
+  });
+
+  it('renders chart components', () => {
+    const config: NodeDetailConfig = {
+      title: 'Chart Test',
+      customPage: {
+        type: 'components',
+        layout: [
+          {
+            type: 'chart',
+            chart_type: 'bar',
+            title: 'Traffic by Endpoint',
+            data: [
+              { label: '/api/users', value: 4200, color: '#3b82f6' },
+              { label: '/api/orders', value: 3100, color: '#10b981' },
+            ],
+          },
+        ],
+      },
+    };
+
+    render(
+      <NodeDetailModal
+        isOpen={true}
+        onClose={() => {}}
+        nodeData={baseNodeData}
+        nodeDetails={config}
+      />
+    );
+
+    expect(document.body.textContent).toContain('Traffic by Endpoint');
+    expect(document.body.textContent).toContain('/api/users');
+    expect(document.body.textContent).toContain('4200');
+  });
 });

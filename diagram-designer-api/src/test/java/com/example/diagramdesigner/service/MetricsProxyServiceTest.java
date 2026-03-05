@@ -35,20 +35,32 @@ class MetricsProxyServiceTest {
         properties.setTimeoutMs(5000);
         objectMapper = new ObjectMapper();
         authResolver = mock(AuthenticationResolver.class);
+        // Default: return empty fingerprint for any URL/node
+        when(authResolver.getAuthFingerprint(anyString(), any())).thenReturn("");
         service = spy(new MetricsProxyService(properties, objectMapper, authResolver));
     }
 
     @Test
     void buildCacheKeyIncludesNodeAndHandlesNull() {
-        String keyA = service.buildCacheKey("http://host/metrics", "node-a");
-        String keyB = service.buildCacheKey("http://host/metrics", "node-b");
-        String keyNull = service.buildCacheKey("http://host/metrics", null);
-        String keyASame = service.buildCacheKey("http://host/metrics", "node-a");
+        String keyA = service.buildCacheKey("http://host/metrics", "node-a", "fp1");
+        String keyB = service.buildCacheKey("http://host/metrics", "node-b", "fp1");
+        String keyNull = service.buildCacheKey("http://host/metrics", null, "fp1");
+        String keyASame = service.buildCacheKey("http://host/metrics", "node-a", "fp1");
 
         assertNotEquals(keyA, keyB, "Same URL with different nodes should produce different keys");
         assertNotEquals(keyA, keyNull, "Keyed vs null-node should differ");
         assertEquals(keyA, keyASame, "Same URL+node should produce the same key");
         assertTrue(keyA.contains("node-a"));
+    }
+
+    @Test
+    void buildCacheKeyIncludesAuthFingerprint() {
+        String key1 = service.buildCacheKey("http://host/metrics", "node-a", "fingerprint-abc");
+        String key2 = service.buildCacheKey("http://host/metrics", "node-a", "fingerprint-xyz");
+        String keyNoAuth = service.buildCacheKey("http://host/metrics", "node-a", null);
+
+        assertNotEquals(key1, key2, "Same URL+node with different auth fingerprints should differ");
+        assertNotEquals(key1, keyNoAuth, "Auth vs no-auth fingerprint should differ");
     }
 
     @Test
@@ -139,6 +151,35 @@ class MetricsProxyServiceTest {
         ConcurrentMap<String, Mono<Object>> inFlightMap =
                 (ConcurrentMap<String, Mono<Object>>) inFlightField.get(service);
         assertTrue(inFlightMap.isEmpty(), "In-flight map should be empty after error completes");
+    }
+
+    @Test
+    void sameUrlDifferentAuthFingerprintProducesIsolatedCacheEntries() {
+        // Simulate two nodes that hit the same URL but resolve to different credentials
+        when(authResolver.getAuthFingerprint("http://host/metrics", "node-a")).thenReturn("fp-aaa");
+        when(authResolver.getAuthFingerprint("http://host/metrics", "node-b")).thenReturn("fp-bbb");
+
+        Map<String, Object> responseA = Map.of("data", "from-node-a-creds");
+        Map<String, Object> responseB = Map.of("data", "from-node-b-creds");
+
+        doReturn(Mono.just((Object) responseA))
+                .when(service).makeAuthenticatedRequest("http://host/metrics", "node-a");
+        doReturn(Mono.just((Object) responseB))
+                .when(service).makeAuthenticatedRequest("http://host/metrics", "node-b");
+
+        // Populate cache for node-a
+        StepVerifier.create(service.proxyRequest("http://host/metrics", "node-a"))
+                .assertNext(re -> assertEquals(responseA, re.getBody()))
+                .verifyComplete();
+
+        // node-b must NOT receive node-a's cached response
+        StepVerifier.create(service.proxyRequest("http://host/metrics", "node-b"))
+                .assertNext(re -> assertEquals(responseB, re.getBody()))
+                .verifyComplete();
+
+        // Both upstream calls should have been made (no cross-node cache hit)
+        verify(service).makeAuthenticatedRequest("http://host/metrics", "node-a");
+        verify(service).makeAuthenticatedRequest("http://host/metrics", "node-b");
     }
 
     @Test

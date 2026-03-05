@@ -204,4 +204,153 @@ describe('NodeDetailsService', () => {
       expect(result.config.links).toHaveLength(1);
     }
   });
+
+  it('validates components customPage type', async () => {
+    const service = await createService();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        title: 'Components Page',
+        customPage: {
+          type: 'components',
+          layout: [
+            { type: 'kpi-card', key: 'Requests', value: '1000' },
+            { type: 'invalid-type', key: 'Bad' },
+            { type: 'status-indicator', status: 'healthy', key: 'API' },
+          ],
+        },
+      }),
+    } as Response);
+
+    const result = await service.loadNodeDetails('componentsPage');
+    expect(result.status).toBe('success');
+    if (result.status === 'success') {
+      expect(result.config.customPage).toBeDefined();
+      expect(result.config.customPage!.type).toBe('components');
+      // Invalid component type should be stripped
+      expect(result.config.customPage!.layout).toHaveLength(2);
+    }
+  });
+
+  it('validates html-file customPage type', async () => {
+    const service = await createService();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        title: 'HTML File Page',
+        customPage: {
+          type: 'html-file',
+          file: 'dashboard.html',
+        },
+      }),
+    } as Response);
+
+    const result = await service.loadNodeDetails('htmlFilePage');
+    expect(result.status).toBe('success');
+    if (result.status === 'success') {
+      expect(result.config.customPage).toBeDefined();
+      expect(result.config.customPage!.type).toBe('html-file');
+    }
+  });
+
+  it('validates tabs components recursively', async () => {
+    const service = await createService();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        title: 'Tabs Page',
+        customPage: {
+          type: 'components',
+          layout: [
+            {
+              type: 'tabs',
+              tabs: [
+                {
+                  label: 'Good Tab',
+                  components: [
+                    { type: 'stat-row', key: 'Version', value: '1.0' },
+                    { type: 'bad-type' },
+                  ],
+                },
+                'not-a-tab',
+                { label: 'No components array' },
+              ],
+            },
+          ],
+        },
+      }),
+    } as Response);
+
+    const result = await service.loadNodeDetails('tabsPage');
+    expect(result.status).toBe('success');
+    if (result.status === 'success') {
+      const layout = result.config.customPage!.layout!;
+      expect(layout).toHaveLength(1);
+      const tabsComponent = layout[0];
+      // Invalid tabs should be stripped
+      expect(tabsComponent.tabs).toHaveLength(1);
+      // Invalid components within tabs should be stripped
+      expect(tabsComponent.tabs![0].components).toHaveLength(1);
+    }
+  });
+
+  it('validates chart data points', async () => {
+    const service = await createService();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        title: 'Chart Page',
+        customPage: {
+          type: 'components',
+          layout: [
+            {
+              type: 'chart',
+              chart_type: 'bar',
+              data: [
+                { label: 'Good', value: 100 },
+                { label: 'Bad', value: 'not-a-number' },
+                'not-an-object',
+              ],
+            },
+          ],
+        },
+      }),
+    } as Response);
+
+    const result = await service.loadNodeDetails('chartPage');
+    expect(result.status).toBe('success');
+    if (result.status === 'success') {
+      const chart = result.config.customPage!.layout![0];
+      expect(chart.data).toHaveLength(1);
+      expect(chart.data![0].label).toBe('Good');
+    }
+  });
+
+  it('normalizes invalid status-indicator status to unknown', async () => {
+    const service = await createService();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        title: 'Status Page',
+        customPage: {
+          type: 'components',
+          layout: [
+            { type: 'status-indicator', status: 'invalid-status', key: 'Test' },
+          ],
+        },
+      }),
+    } as Response);
+
+    const result = await service.loadNodeDetails('statusPage');
+    expect(result.status).toBe('success');
+    if (result.status === 'success') {
+      const indicator = result.config.customPage!.layout![0];
+      expect(indicator.status).toBe('unknown');
+    }
+  });
 });

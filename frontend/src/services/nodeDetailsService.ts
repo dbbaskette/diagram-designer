@@ -1,4 +1,4 @@
-import type { NodeDetailConfig } from '../components/NodeDetailModal';
+import type { NodeDetailConfig, DashboardComponent } from '../components/NodeDetailModal';
 import { buildApiUrl, log } from '../config/appConfig';
 
 export type NodeDetailsResult =
@@ -78,10 +78,11 @@ class NodeDetailsService {
     const validated: NodeDetailConfig = {
       title: typeof config.title === 'string' ? config.title : undefined,
       description: typeof config.description === 'string' ? config.description : undefined,
+      modalSize: config.modalSize && typeof config.modalSize === 'object' ? config.modalSize : undefined,
       sections: Array.isArray(config.sections) ? config.sections.filter(this.isValidSection) : [],
       links: Array.isArray(config.links) ? config.links.filter(this.isValidLink) : [],
       customPage: config.customPage && this.isValidCustomPage(config.customPage)
-        ? config.customPage
+        ? this.sanitizeCustomPage(config.customPage)
         : undefined
     };
 
@@ -108,12 +109,86 @@ class NodeDetailsService {
   }
 
   private isValidCustomPage(customPage: any): boolean {
-    return (
-      typeof customPage === 'object' &&
-      typeof customPage.type === 'string' &&
-      ['iframe', 'markdown', 'html'].includes(customPage.type) &&
-      typeof customPage.content === 'string'
-    );
+    if (typeof customPage !== 'object' || typeof customPage.type !== 'string') return false;
+
+    const validTypes = ['iframe', 'markdown', 'html', 'html-file', 'components'];
+    if (!validTypes.includes(customPage.type)) return false;
+
+    // 'components' type requires layout array instead of content string
+    if (customPage.type === 'components') {
+      return Array.isArray(customPage.layout);
+    }
+
+    // 'html-file' type requires file string
+    if (customPage.type === 'html-file') {
+      return typeof customPage.file === 'string';
+    }
+
+    return typeof customPage.content === 'string';
+  }
+
+  private sanitizeCustomPage(customPage: any): any {
+    if (customPage.type === 'components' && Array.isArray(customPage.layout)) {
+      return {
+        ...customPage,
+        layout: customPage.layout.filter((c: any) => this.isValidDashboardComponent(c))
+      };
+    }
+    return customPage;
+  }
+
+  private isValidDashboardComponent(component: any): boolean {
+    if (typeof component !== 'object' || typeof component.type !== 'string') return false;
+
+    const validTypes = [
+      'section', 'rectangle', 'grid', 'metric-card', 'progress-bar', 'feature-weight',
+      'tabs', 'chart', 'kpi-card', 'status-indicator', 'table', 'stat-row'
+    ];
+    if (!validTypes.includes(component.type)) return false;
+
+    // Recursively validate nested components
+    if (Array.isArray(component.components)) {
+      component.components = component.components.filter((c: any) => this.isValidDashboardComponent(c));
+    }
+
+    // Validate tabs have valid structure
+    if (component.type === 'tabs' && Array.isArray(component.tabs)) {
+      component.tabs = component.tabs.filter((tab: any) =>
+        typeof tab === 'object' && typeof tab.label === 'string' && Array.isArray(tab.components)
+      );
+      for (const tab of component.tabs) {
+        tab.components = tab.components.filter((c: any) => this.isValidDashboardComponent(c));
+      }
+    }
+
+    // Validate chart data points
+    if (component.type === 'chart' && Array.isArray(component.data)) {
+      component.data = component.data.filter((d: any) =>
+        typeof d === 'object' && typeof d.label === 'string' && typeof d.value === 'number'
+      );
+    }
+
+    // Validate table columns
+    if (component.type === 'table') {
+      if (Array.isArray(component.columns)) {
+        component.columns = component.columns.filter((col: any) =>
+          typeof col === 'object' && typeof col.header === 'string' && typeof col.field === 'string'
+        );
+      }
+      if (Array.isArray(component.rows)) {
+        component.rows = component.rows.filter((row: any) => typeof row === 'object');
+      }
+    }
+
+    // Validate status-indicator status values
+    if (component.type === 'status-indicator' && component.status) {
+      const validStatuses = ['healthy', 'warning', 'critical', 'unknown'];
+      if (!validStatuses.includes(component.status)) {
+        component.status = 'unknown';
+      }
+    }
+
+    return true;
   }
 
   /**
