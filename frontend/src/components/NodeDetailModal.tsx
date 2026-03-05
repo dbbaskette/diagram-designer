@@ -116,6 +116,51 @@ const getColorClasses = (color?: string) => {
   return colorMap[color] || color;
 };
 
+const tailwindGapToCss: Record<string, string> = {
+  '0': '0rem',
+  '0.5': '0.125rem',
+  '1': '0.25rem',
+  '1.5': '0.375rem',
+  '2': '0.5rem',
+  '2.5': '0.625rem',
+  '3': '0.75rem',
+  '3.5': '0.875rem',
+  '4': '1rem',
+  '5': '1.25rem',
+  '6': '1.5rem',
+  '7': '1.75rem',
+  '8': '2rem',
+  '9': '2.25rem',
+  '10': '2.5rem',
+  '11': '2.75rem',
+  '12': '3rem',
+};
+
+const normalizeGridColumns = (gridCols?: number): number => {
+  if (!Number.isInteger(gridCols) || !gridCols) {
+    return 4;
+  }
+
+  return Math.max(1, Math.min(12, gridCols));
+};
+
+const normalizeGridGap = (gap?: string): string => {
+  if (!gap) {
+    return tailwindGapToCss['6'];
+  }
+
+  const trimmed = gap.trim();
+  if (trimmed in tailwindGapToCss) {
+    return tailwindGapToCss[trimmed];
+  }
+
+  if (/^\d*\.?\d+(px|rem|em|%)$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  return tailwindGapToCss['6'];
+};
+
 // Tabs wrapper component (needs state for active tab)
 const TabsComponent: React.FC<{ component: DashboardComponent; baseClasses: string }> = ({ component, baseClasses }) => {
   const [activeTab, setActiveTab] = useState(0);
@@ -296,10 +341,17 @@ const renderDashboardComponent = (component: DashboardComponent, index: number):
       );
 
     case 'grid':
-      const gridCols = component.grid_cols || 4;
-      const gap = component.gap || '6';
+      const gridCols = normalizeGridColumns(component.grid_cols);
+      const gap = normalizeGridGap(component.gap);
       return (
-        <div key={index} className={`grid grid-cols-${gridCols} gap-${gap} mb-8 ${baseClasses}`}>
+        <div
+          key={index}
+          className={`grid mb-8 ${baseClasses}`}
+          style={{
+            gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
+            gap,
+          }}
+        >
           {component.components?.map((child, childIndex) =>
             renderDashboardComponent(child, childIndex)
           )}
@@ -424,7 +476,11 @@ const renderDashboardComponent = (component: DashboardComponent, index: number):
             <thead>
               <tr className="bg-gray-50 border-b">
                 {(component.columns || []).map((col, ci) => (
-                  <th key={ci} className={`px-4 py-2 font-medium text-gray-700 text-${col.align || 'left'}`}>
+                  <th
+                    key={ci}
+                    className="px-4 py-2 font-medium text-gray-700"
+                    style={{ textAlign: col.align || 'left' }}
+                  >
                     {col.header}
                   </th>
                 ))}
@@ -434,7 +490,7 @@ const renderDashboardComponent = (component: DashboardComponent, index: number):
               {(component.rows || []).map((row, ri) => (
                 <tr key={ri} className="border-b last:border-b-0 hover:bg-gray-50">
                   {(component.columns || []).map((col, ci) => (
-                    <td key={ci} className={`px-4 py-2 text-${col.align || 'left'}`}>
+                    <td key={ci} className="px-4 py-2" style={{ textAlign: col.align || 'left' }}>
                       {row[col.field] || ''}
                     </td>
                   ))}

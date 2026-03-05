@@ -271,6 +271,41 @@ describe('NodeDetailModal', () => {
     expect(document.body.textContent).toContain('34%');
   });
 
+  it('renders grid layouts with inline gridTemplateColumns and gap styles', () => {
+    const config: NodeDetailConfig = {
+      title: 'Grid Test',
+      customPage: {
+        type: 'components',
+        layout: [
+          {
+            type: 'grid',
+            grid_cols: 3,
+            gap: '2',
+            components: [
+              { type: 'metric-card', key: 'A', value: '1' },
+              { type: 'metric-card', key: 'B', value: '2' },
+              { type: 'metric-card', key: 'C', value: '3' },
+            ],
+          },
+        ],
+      },
+    };
+
+    render(
+      <NodeDetailModal
+        isOpen={true}
+        onClose={() => {}}
+        nodeData={baseNodeData}
+        nodeDetails={config}
+      />
+    );
+
+    const grid = document.body.querySelector('.grid');
+    expect(grid).not.toBeNull();
+    expect((grid as HTMLElement).style.gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))');
+    expect((grid as HTMLElement).style.gap).toBe('0.5rem');
+  });
+
   it('renders chart components', () => {
     const config: NodeDetailConfig = {
       title: 'Chart Test',
