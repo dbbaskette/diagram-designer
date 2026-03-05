@@ -25,6 +25,8 @@ import ParticleEdge from './ParticleEdge';
 import SharedParticleEdgeDefs from './SharedParticleEdgeDefs';
 import type { DiagramConfig, DiagramNode } from '../types/diagram';
 import { useTheme } from '../context/ThemeContext';
+import { useMetrics } from '../context/MetricsContext';
+import { buildDependencyGraph } from '../utils/dependencyGraph';
 import { applyDagreLayout } from '../utils/autoLayout';
 import NodeSearchFilter from './NodeSearchFilter';
 import type { HealthFilter } from './NodeSearchFilter';
@@ -51,6 +53,7 @@ interface DiagramViewProps {
 const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDiagram = 'diagram-config.json', showCoordinates = false, initialConfig = null }) => {
   const { theme } = useTheme();
   const { getNodes } = useReactFlow();
+  const { setDependencyGraph } = useMetrics();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [config, setConfig] = useState<DiagramConfig | null>(null);
@@ -190,6 +193,10 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
 
       setNodes(flowNodes);
       setEdges(flowEdges);
+
+      // Build and publish dependency graph for priority refresh
+      const depGraph = buildDependencyGraph(data.nodes);
+      setDependencyGraph(depGraph);
     };
 
     const loadConfig = async () => {

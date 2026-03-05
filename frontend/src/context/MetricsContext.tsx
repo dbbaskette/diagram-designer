@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useCallback, useRef, useEffect } from 'react';
+import type { DependencyGraph } from '../utils/dependencyGraph';
+import { getNeighbors } from '../utils/dependencyGraph';
+import { log } from '../config/appConfig';
 
 const DEFAULT_INTERVAL_MS = 30000;
+const PRIORITY_REFRESH_DEBOUNCE_MS = 2000;
 
 interface MetricRequest {
   url: string;
@@ -19,6 +23,7 @@ interface MetricsContextType {
     errorCallback: (error: any) => void,
     intervalMs?: number
   ) => () => void;
+  setDependencyGraph: (graph: DependencyGraph) => void;
 }
 
 const MetricsContext = createContext<MetricsContextType | null>(null);
@@ -80,10 +85,74 @@ export function buildIntervalGroups(requests: Map<string, MetricRequest>): Map<n
   return groups;
 }
 
+/**
+ * Collect all registered metric requests whose node is in the given set.
+ */
+export function getRequestsForNodes(
+  requests: Map<string, MetricRequest>,
+  nodeNames: Set<string>
+): Map<string, MetricRequest> {
+  const result = new Map<string, MetricRequest>();
+  requests.forEach((req, key) => {
+    if (nodeNames.has(req.node)) {
+      result.set(key, req);
+    }
+  });
+  return result;
+}
+
 export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const requestsRef = useRef<Map<string, MetricRequest>>(new Map());
   const intervalsRef = useRef<Map<number, ReturnType<typeof setInterval>>>(new Map());
   const initialTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dependencyGraphRef = useRef<DependencyGraph | null>(null);
+  const priorityRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingPriorityNodesRef = useRef<Set<string>>(new Set());
+
+  const triggerPriorityRefresh = useCallback(() => {
+    const pendingNodes = pendingPriorityNodesRef.current;
+    if (pendingNodes.size === 0) return;
+
+    const neighborRequests = getRequestsForNodes(requestsRef.current, pendingNodes);
+
+    if (neighborRequests.size > 0) {
+      log.debug(
+        '[MetricsContext] Priority refresh triggered for neighbors:',
+        Array.from(pendingNodes),
+        `(${neighborRequests.size} metrics)`
+      );
+      fetchBatch(neighborRequests);
+    }
+
+    pendingPriorityNodesRef.current = new Set();
+  }, []);
+
+  const schedulePriorityRefresh = useCallback((failedNodeName: string) => {
+    const graph = dependencyGraphRef.current;
+    if (!graph) return;
+
+    const neighbors = getNeighbors(graph, failedNodeName);
+    if (neighbors.size === 0) {
+      log.debug('[MetricsContext] No neighbors for failed node:', failedNodeName);
+      return;
+    }
+
+    log.debug(
+      '[MetricsContext] Failure detected on node:',
+      failedNodeName,
+      '- scheduling priority refresh for:',
+      Array.from(neighbors)
+    );
+
+    // Accumulate neighbor nodes for debounced batch
+    neighbors.forEach(n => pendingPriorityNodesRef.current.add(n));
+
+    // Debounce: reset timer so multiple near-simultaneous failures batch together
+    if (priorityRefreshTimerRef.current) {
+      clearTimeout(priorityRefreshTimerRef.current);
+    }
+    priorityRefreshTimerRef.current = setTimeout(triggerPriorityRefresh, PRIORITY_REFRESH_DEBOUNCE_MS);
+  }, [triggerPriorityRefresh]);
 
   const syncIntervals = useCallback(() => {
     // Determine which interval durations are currently needed
@@ -121,6 +190,9 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (initialTimeoutRef.current) {
         clearTimeout(initialTimeoutRef.current);
       }
+      if (priorityRefreshTimerRef.current) {
+        clearTimeout(priorityRefreshTimerRef.current);
+      }
     };
   }, []);
 
@@ -147,17 +219,33 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     intervalMs: number = DEFAULT_INTERVAL_MS
   ): (() => void) => {
     const key = `${node}-${url}`;
-    requestsRef.current.set(key, { url, node, key, intervalMs, callback, errorCallback });
+
+    // Wrap errorCallback to trigger priority refresh on failure
+    const wrappedErrorCallback = (error: any) => {
+      errorCallback(error);
+      schedulePriorityRefresh(node);
+    };
+
+    requestsRef.current.set(key, { url, node, key, intervalMs, callback, errorCallback: wrappedErrorCallback });
     syncIntervals();
 
     return () => {
       requestsRef.current.delete(key);
       syncIntervals();
     };
-  }, [syncIntervals]);
+  }, [syncIntervals, schedulePriorityRefresh]);
+
+  const setDependencyGraph = useCallback((graph: DependencyGraph) => {
+    dependencyGraphRef.current = graph;
+    log.debug(
+      '[MetricsContext] Dependency graph set:',
+      graph.neighbors.size,
+      'nodes'
+    );
+  }, []);
 
   return (
-    <MetricsContext.Provider value={{ registerMetric }}>
+    <MetricsContext.Provider value={{ registerMetric, setDependencyGraph }}>
       {children}
     </MetricsContext.Provider>
   );

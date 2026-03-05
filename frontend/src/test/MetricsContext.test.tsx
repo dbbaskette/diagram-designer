@@ -1,18 +1,34 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import React from 'react';
-import { MetricsProvider, useMetrics, buildIntervalGroups } from '../context/MetricsContext';
+import { MetricsProvider, useMetrics, buildIntervalGroups, getRequestsForNodes } from '../context/MetricsContext';
+import { buildDependencyGraph } from '../utils/dependencyGraph';
+import type { DiagramNode } from '../types/diagram';
 
 // --- Unit tests for buildIntervalGroups ---
 
-function makeRequest(key: string, intervalMs: number) {
+function makeRequest(key: string, intervalMs: number, node: string = 'node-a') {
   return {
     url: `http://example.com/${key}`,
-    node: 'node-a',
+    node,
     key,
     intervalMs,
     callback: vi.fn(),
     errorCallback: vi.fn(),
+  };
+}
+
+function makeNode(name: string, connectTo: DiagramNode['connectTo'] = []): DiagramNode {
+  return {
+    name,
+    displayName: name,
+    description: '',
+    icon: 'server',
+    dataGrid: [],
+    connectTo,
+    lineType: 'solid',
+    lineColor: '#3498db',
+    particles: { enabled: false },
   };
 }
 
@@ -48,6 +64,30 @@ describe('buildIntervalGroups', () => {
     const groups = buildIntervalGroups(requests);
     expect(groups.size).toBe(1);
     expect(groups.get(10000)!.size).toBe(2);
+  });
+});
+
+// --- Unit tests for getRequestsForNodes ---
+
+describe('getRequestsForNodes', () => {
+  it('filters requests by node names', () => {
+    const requests = new Map([
+      ['a', makeRequest('a', 5000, 'node-a')],
+      ['b', makeRequest('b', 5000, 'node-b')],
+      ['c', makeRequest('c', 5000, 'node-c')],
+    ]);
+
+    const result = getRequestsForNodes(requests, new Set(['node-a', 'node-c']));
+    expect(result.size).toBe(2);
+    expect(result.has('a')).toBe(true);
+    expect(result.has('c')).toBe(true);
+    expect(result.has('b')).toBe(false);
+  });
+
+  it('returns empty map when no nodes match', () => {
+    const requests = new Map([['a', makeRequest('a', 5000, 'node-a')]]);
+    const result = getRequestsForNodes(requests, new Set(['node-x']));
+    expect(result.size).toBe(0);
   });
 });
 
@@ -297,5 +337,112 @@ describe('MetricsProvider', () => {
     });
 
     expect(errorCb).toHaveBeenCalledWith('Batch request failed: 500');
+  });
+
+  it('exposes setDependencyGraph', () => {
+    const { result } = renderHook(() => useMetrics(), { wrapper });
+    expect(typeof result.current.setDependencyGraph).toBe('function');
+  });
+
+  it('triggers priority refresh for neighbor nodes on failure', async () => {
+    const { result } = renderHook(() => useMetrics(), { wrapper });
+
+    // Set up dependency graph: A -> B -> C
+    const graph = buildDependencyGraph([
+      makeNode('A', ['B']),
+      makeNode('B', ['C']),
+      makeNode('C'),
+    ]);
+
+    act(() => {
+      result.current.setDependencyGraph(graph);
+    });
+
+    // Register metrics for all three nodes
+    act(() => {
+      result.current.registerMetric('http://example.com/a', 'A', vi.fn(), vi.fn(), 30000);
+      result.current.registerMetric('http://example.com/b', 'B', vi.fn(), vi.fn(), 30000);
+      result.current.registerMetric('http://example.com/c', 'C', vi.fn(), vi.fn(), 30000);
+    });
+
+    // Simulate a failure response for node B's metric
+    // First: initial fetch succeeds
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({
+        'A-http://example.com/a': { value: 'ok' },
+        'B-http://example.com/b': { value: 'ok' },
+        'C-http://example.com/c': { value: 'ok' },
+      }), { status: 200 })
+    );
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    // Now simulate a batch failure (500) which triggers errorCallbacks
+    vi.mocked(fetch).mockResolvedValue(
+      new Response('', { status: 500 })
+    );
+
+    // Wait for the periodic interval to fire (30s)
+    await act(async () => {
+      vi.advanceTimersByTime(30000);
+    });
+    // fetch called: 1 (initial) + 1 (periodic) = 2
+    expect(fetch).toHaveBeenCalledTimes(2);
+
+    // Now advance past the priority refresh debounce (2s)
+    // The error callbacks triggered schedulePriorityRefresh for each failed node
+    // which should trigger a priority refresh for their neighbors
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    );
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    // Should have triggered a priority refresh batch for neighbor nodes
+    expect(fetch).toHaveBeenCalledTimes(3);
+
+    // Verify the priority refresh batch contains the right nodes
+    const priorityBatchBody = JSON.parse((fetch as any).mock.calls[2][1].body);
+    const priorityNodeNames = priorityBatchBody.map((r: any) => r.node).sort();
+    // A's neighbors: B; B's neighbors: A, C; C's neighbors: B
+    // All 3 nodes failed, so all neighbors are: B (from A), A+C (from B), B (from C)
+    // Unique set: A, B, C
+    expect(priorityNodeNames).toEqual(['A', 'B', 'C']);
+  });
+
+  it('does not trigger priority refresh without dependency graph', async () => {
+    const errorCb = vi.fn();
+    const { result } = renderHook(() => useMetrics(), { wrapper });
+
+    // No dependency graph set
+
+    act(() => {
+      result.current.registerMetric('http://example.com/a', 'A', vi.fn(), errorCb, 5000);
+    });
+
+    // Trigger a failure
+    vi.mocked(fetch).mockResolvedValue(
+      new Response('', { status: 500 })
+    );
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    // Error callback fires but no priority refresh
+    expect(errorCb).toHaveBeenCalled();
+
+    // Advance past debounce - no extra fetch
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    // Only the initial fetch + the interval, no priority fetch
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 });
