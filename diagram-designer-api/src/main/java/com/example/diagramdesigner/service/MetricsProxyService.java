@@ -2,6 +2,8 @@ package com.example.diagramdesigner.service;
 
 import com.example.diagramdesigner.config.MetricsProxyProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,26 +12,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class MetricsProxyService {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsProxyService.class);
+    private static final int DEFAULT_MAX_CACHE_SIZE = 256;
 
     private final WebClient webClient;
     private final MetricsProxyProperties properties;
     private final ObjectMapper objectMapper;
     private final AuthenticationResolver authenticationResolver;
 
-    // Simple in-memory cache
-    private final Map<String, CacheEntry> cache = new ConcurrentHashMap<>();
+    private final Cache<String, Object> cache;
 
     @Autowired
     public MetricsProxyService(MetricsProxyProperties properties, ObjectMapper objectMapper,
@@ -40,6 +40,10 @@ public class MetricsProxyService {
         this.webClient = WebClient.builder()
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024)) // 1MB
                 .build();
+        this.cache = Caffeine.newBuilder()
+                .maximumSize(properties.getCacheMaxSize() > 0 ? properties.getCacheMaxSize() : DEFAULT_MAX_CACHE_SIZE)
+                .expireAfterWrite(Duration.ofMillis(properties.getCacheTtlMs()))
+                .build();
     }
 
     public Mono<ResponseEntity<Object>> proxyRequest(String targetUrl, String nodeName) {
@@ -47,10 +51,10 @@ public class MetricsProxyService {
 
         // Check cache first
         if (properties.isEnableCaching()) {
-            CacheEntry cached = cache.get(targetUrl);
-            if (cached != null && !cached.isExpired()) {
+            Object cached = cache.getIfPresent(targetUrl);
+            if (cached != null) {
                 logger.debug("Returning cached response for: {}", targetUrl);
-                return Mono.just(ResponseEntity.ok(cached.getData()));
+                return Mono.just(ResponseEntity.ok(cached));
             }
         }
 
@@ -58,7 +62,7 @@ public class MetricsProxyService {
                 .map(response -> {
                     // Cache the response if enabled
                     if (properties.isEnableCaching()) {
-                        cache.put(targetUrl, new CacheEntry(response, properties.getCacheTtlMs()));
+                        cache.put(targetUrl, response);
                     }
                     return ResponseEntity.ok(response);
                 })
@@ -123,30 +127,6 @@ public class MetricsProxyService {
                     .body(Map.of(
                             "error", "Service unavailable",
                             "message", error.getMessage() != null ? error.getMessage() : "Network error")));
-        }
-    }
-
-    // Clean up expired cache entries periodically
-    @Scheduled(fixedRate = 60000) // Run every minute
-    public void cleanupCache() {
-        cache.entrySet().removeIf(entry -> entry.getValue().isExpired());
-    }
-
-    private static class CacheEntry {
-        private final Object data;
-        private final long expiry;
-
-        public CacheEntry(Object data, long ttlMs) {
-            this.data = data;
-            this.expiry = System.currentTimeMillis() + ttlMs;
-        }
-
-        public Object getData() {
-            return data;
-        }
-
-        public boolean isExpired() {
-            return System.currentTimeMillis() > expiry;
         }
     }
 }
