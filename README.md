@@ -147,8 +147,8 @@ cd diagram-designer
 cp .config.env.template .config.env
 # Edit .config.env with your service credentials (node-based authentication)
 
-# 🎯 Start local development (Spring Boot + React)
-./deploy-local.sh
+# 🎯 Start local development (Spring Boot + React with hot reload)
+./deploy.sh --local
 ```
 
 **🌐 Open your browser to:**
@@ -159,10 +159,10 @@ cp .config.env.template .config.env
 
 ```bash
 # 📦 Production build (served locally on :8080)
-./deploy-local-prod.sh
+./deploy.sh --prod
 
 # ☁️ Deploy to Cloud Foundry
-./deploy.sh
+./deploy.sh --cf       # or just ./deploy.sh
 ```
 
 ---
@@ -836,10 +836,10 @@ echo "MYSERVICE_API_KEY=abc123" >> .config.env
 
 ```bash
 # 🔧 Development server with hot reload (Spring Boot + React)
-./deploy-local.sh
+./deploy.sh --local
 
 # 🏭 Production build served locally
-./deploy-local-prod.sh
+./deploy.sh --prod
 ```
 
 ### ☁️ **Enterprise Cloud Foundry Deployment**

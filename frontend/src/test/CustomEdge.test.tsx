@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import ParticleEdge from '../components/ParticleEdge';
+import CustomEdge from '../components/CustomEdge';
 
 afterEach(cleanup);
 
@@ -12,14 +12,14 @@ const defaultProps = {
   targetY: 100,
 };
 
-// ParticleEdge renders raw SVG elements, so we wrap in an <svg> for valid DOM
+// CustomEdge renders raw SVG elements, so we wrap in an <svg> for valid DOM
 function renderInSvg(ui: React.ReactElement) {
   return render(<svg>{ui}</svg>);
 }
 
-describe('ParticleEdge', () => {
+describe('CustomEdge', () => {
   it('renders a path element', () => {
-    const { container } = renderInSvg(<ParticleEdge {...defaultProps} />);
+    const { container } = renderInSvg(<CustomEdge {...defaultProps} />);
     const path = container.querySelector('path.react-flow__edge-path');
     expect(path).toBeInTheDocument();
     expect(path!.getAttribute('id')).toBe('edge-1');
@@ -27,7 +27,7 @@ describe('ParticleEdge', () => {
 
   it('does not render particles when disabled', () => {
     const { container } = renderInSvg(
-      <ParticleEdge {...defaultProps} data={{ particles: { enabled: false } }} />
+      <CustomEdge {...defaultProps} data={{ particles: { enabled: false } }} />
     );
     const circles = container.querySelectorAll('circle');
     expect(circles.length).toBe(0);
@@ -35,7 +35,7 @@ describe('ParticleEdge', () => {
 
   it('renders particles when enabled', () => {
     const { container } = renderInSvg(
-      <ParticleEdge
+      <CustomEdge
         {...defaultProps}
         data={{ particles: { enabled: true, count: 3, color: '#ff0000' } }}
       />
@@ -46,7 +46,7 @@ describe('ParticleEdge', () => {
 
   it('particle circles reference shared url(#particle-glow) filter', () => {
     const { container } = renderInSvg(
-      <ParticleEdge
+      <CustomEdge
         {...defaultProps}
         data={{ particles: { enabled: true, count: 2 } }}
       />
@@ -59,7 +59,7 @@ describe('ParticleEdge', () => {
 
   it('renders text elements with particle text when provided', () => {
     const { container } = renderInSvg(
-      <ParticleEdge
+      <CustomEdge
         {...defaultProps}
         data={{ particles: { enabled: true, count: 2, text: 'data' } }}
       />
@@ -73,12 +73,11 @@ describe('ParticleEdge', () => {
 
   it('renders static edge label referencing url(#text-glow) filter', () => {
     const { container } = renderInSvg(
-      <ParticleEdge
+      <CustomEdge
         {...defaultProps}
         data={{ particles: { enabled: true, count: 1, label: 'API' } }}
       />
     );
-    // The label is a standalone <text> with filter="url(#text-glow)"
     const labels = container.querySelectorAll('text[filter="url(#text-glow)"]');
     expect(labels.length).toBe(1);
     expect(labels[0].textContent).toBe('API');
@@ -86,13 +85,24 @@ describe('ParticleEdge', () => {
 
   it('does not render inline defs (filters are shared)', () => {
     const { container } = renderInSvg(
-      <ParticleEdge
+      <CustomEdge
         {...defaultProps}
         data={{ particles: { enabled: true, count: 3 } }}
       />
     );
-    // ParticleEdge should NOT contain its own <defs> — they come from SharedParticleEdgeDefs
     const defs = container.querySelectorAll('defs');
     expect(defs.length).toBe(0);
+  });
+
+  it('overrides stroke when sourceStatus is provided (health coloring)', () => {
+    const { container } = renderInSvg(
+      <CustomEdge
+        {...defaultProps}
+        style={{ stroke: '#3498db' }}
+        data={{ particles: { enabled: false }, sourceStatus: 'down' }}
+      />
+    );
+    const path = container.querySelector('path.react-flow__edge-path') as SVGPathElement;
+    expect(path.style.stroke).toBe('#ef4444');
   });
 });

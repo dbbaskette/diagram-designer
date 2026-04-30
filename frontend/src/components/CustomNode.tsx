@@ -114,6 +114,21 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
   const [nodeDetails, setNodeDetails] = useState<NodeDetailConfig | undefined>(undefined);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // A status check is "stale" when the most recent check is older than 2x the
+  // expected update interval — gives users a visible cue when the metrics pipe
+  // dries up without crashing the UI.
+  const expectedIntervalMs = data.status?.updateInterval || data.pollIntervalMs || data.config.updateInterval || 30000;
+  const isStale = lastChecked
+    ? Date.now() - lastChecked.getTime() > expectedIntervalMs * 2
+    : false;
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    if (!data.status) return;
+    const id = setInterval(() => forceTick((n) => n + 1), Math.max(5000, expectedIntervalMs));
+    return () => clearInterval(id);
+  }, [data.status, expectedIntervalMs]);
 
   const { registerMetric } = useMetrics();
 
@@ -247,6 +262,20 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
     };
   }, [contextMenuPosition, closeContextMenu]);
 
+  // Listen for "open this node" requests dispatched from keyboard navigation.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ nodeId: string }>).detail;
+      if (detail?.nodeId === data.name) {
+        void openDetailsModal();
+      }
+    };
+    window.addEventListener('diagram:open-node', handler);
+    return () => window.removeEventListener('diagram:open-node', handler);
+    // openDetailsModal closure captures the right state for this node
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.name]);
+
   // Generate handles with vertical spreading when multiple
   const generateHandles = (count: number, type: 'target' | 'source', prefix: string, position: Position) => {
     const spacing = 30;
@@ -278,9 +307,41 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
   const outputHandleElements = generateHandles(outputHandles, 'source', 'output', Position.Right);
 
   return (
-    <div style={{ opacity: data.dimmed ? 0.5 : 1 }}>
+    <div
+      style={{ opacity: data.dimmed ? 0.5 : 1 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Input Handles - Configurable number */}
       {inputHandleElements}
+
+      {/* Hover Preview Popover */}
+      {isHovered && (
+        <div
+          className="absolute z-30 -top-2 left-full ml-3 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-3 text-left pointer-events-none"
+          data-testid="node-hover-preview"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-2.5 h-2.5 rounded-full ${getNodeStatusClass(status)}`}></div>
+            <div className="font-semibold text-gray-900 dark:text-white truncate">{data.displayName}</div>
+          </div>
+          {data.description && (
+            <div className="text-xs text-gray-600 dark:text-gray-300 mb-2 line-clamp-3">{data.description}</div>
+          )}
+          <div className="text-[11px] text-gray-500 dark:text-gray-400 space-y-0.5">
+            <div>Status: <span className="font-medium">{status}{isStale ? ' (stale)' : ''}</span></div>
+            {lastChecked && (
+              <div>Last check: {lastChecked.toLocaleTimeString()}</div>
+            )}
+            {data.url && (
+              <div className="truncate">↗ {data.url}</div>
+            )}
+            {data.dataGrid?.length > 0 && (
+              <div>{data.dataGrid.length} metric{data.dataGrid.length === 1 ? '' : 's'} tracked</div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Node Circle */}
       <div
@@ -311,11 +372,20 @@ const CustomNode: React.FC<NodeProps<NodeData>> = memo(({ data, xPos, yPos }) =>
         </div>
 
         {/* Status Indicator */}
-        <div className="absolute -top-2 -right-2">
+        <div className="absolute -top-2 -right-2 flex flex-col items-end gap-1">
           <div
             className={`w-4 h-4 rounded-full border-2 border-gray-900 ${getNodeStatusClass(status)}`}
             title={`Status: ${status}${statusError ? ` (${statusError})` : ''}${lastChecked ? ` (Last checked: ${lastChecked.toLocaleTimeString()})` : ''}`}
           ></div>
+          {isStale && (
+            <div
+              className="px-1.5 py-0.5 rounded bg-orange-500 text-white text-[9px] font-bold shadow"
+              title={`Stale: last check was ${lastChecked!.toLocaleTimeString()}`}
+              data-testid="stale-badge"
+            >
+              STALE
+            </div>
+          )}
         </div>
 
         {/* Pin Indicator */}

@@ -25,6 +25,7 @@ interface MetricsContextType {
     intervalMs?: number
   ) => () => void;
   setDependencyGraph: (graph: DependencyGraph) => void;
+  refreshAll: () => void;
 }
 
 const MetricsContext = createContext<MetricsContextType | null>(null);
@@ -260,8 +261,13 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     );
   }, []);
 
+  const refreshAll = useCallback(() => {
+    if (requestsRef.current.size === 0) return;
+    safeFetchBatch(new Map(requestsRef.current), 'Manual refresh');
+  }, [safeFetchBatch]);
+
   return (
-    <MetricsContext.Provider value={{ registerMetric, setDependencyGraph }}>
+    <MetricsContext.Provider value={{ registerMetric, setDependencyGraph, refreshAll }}>
       {children}
     </MetricsContext.Provider>
   );
