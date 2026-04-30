@@ -20,8 +20,7 @@ import { toPng } from 'html-to-image';
 import 'reactflow/dist/style.css';
 
 import CustomNode from './CustomNode';
-import CustomCurvedEdge from './CustomEdge';
-import ParticleEdge from './ParticleEdge';
+import CustomEdge from './CustomEdge';
 import SharedParticleEdgeDefs from './SharedParticleEdgeDefs';
 import type { DiagramConfig, DiagramNode } from '../types/diagram';
 import { useTheme } from '../context/ThemeContext';
@@ -32,14 +31,15 @@ import NodeSearchFilter from './NodeSearchFilter';
 import type { HealthFilter } from './NodeSearchFilter';
 import type { NodeStatus } from '../utils/nodeStatus';
 import { getVisibleNodeIds, applyNodeVisibility, applyEdgeVisibility, countNodesByStatus } from '../utils/nodeFilter';
+import { subscribeDiagramAction } from '../utils/diagramActions';
 
 const nodeTypes = {
   custom: CustomNode,
 };
 
 const edgeTypes = {
-  curved: CustomCurvedEdge,
-  particle: ParticleEdge,
+  curved: CustomEdge,
+  particle: CustomEdge,
 };
 
 interface DiagramViewProps {
@@ -168,8 +168,9 @@ const buildFlowEdges = (data: DiagramConfig): Edge[] => {
 // Inner component that uses ReactFlow hooks
 const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDiagram = 'diagram-config.json', showCoordinates = false, initialConfig = null }) => {
   const { theme } = useTheme();
-  const { getNodes } = useReactFlow();
-  const { setDependencyGraph } = useMetrics();
+  const reactFlowInstance = useReactFlow();
+  const { getNodes } = reactFlowInstance;
+  const { setDependencyGraph, refreshAll } = useMetrics();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [config, setConfig] = useState<DiagramConfig | null>(null);
@@ -178,6 +179,7 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
   const [searchQuery, setSearchQuery] = useState(getInitialSearchQuery);
   const [healthFilter, setHealthFilter] = useState<HealthFilter>(getInitialHealthFilter);
   const [nodeStatuses, setNodeStatuses] = useState<Map<string, NodeStatus>>(new Map());
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const dragPersistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const memoizedFlowEdges = useMemo(() => {
@@ -247,56 +249,48 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
     });
   }, [selectedDiagram]);
 
+  // Build flow nodes from config — extracted so reset-layout can call it directly
+  const processConfig = useCallback((data: DiagramConfig, skipSavedPositions: boolean = false) => {
+    const savedPositions = skipSavedPositions ? {} : readStoredPositions(selectedDiagram);
+    const defaultPinned = new Set(
+      data.nodes.filter((node) => node.pinned).map((node) => node.name)
+    );
+    const storedPinned = readStoredPinnedNodeIds(selectedDiagram);
+    const pinnedForBuild = storedPinned.hasStoredValue ? storedPinned.pins : defaultPinned;
+
+    if (!storedPinned.hasStoredValue && defaultPinned.size > 0) {
+      localStorage.setItem(`diagram-pins-${selectedDiagram}`, JSON.stringify([...defaultPinned]));
+    }
+
+    setPinnedNodeIds(pinnedForBuild);
+
+    const flowNodes = data.nodes.map((node: DiagramNode, index: number) => {
+      const savedPosition = savedPositions[node.name];
+      const configPosition = node.position;
+      const defaultPosition = { x: index * 300 + 100, y: 200 };
+
+      return {
+        id: node.name,
+        type: 'custom',
+        position: savedPosition || configPosition || defaultPosition,
+        data: {
+          ...node,
+          config: data.config,
+          showCoordinates,
+          dimmed: false,
+          pinned: pinnedForBuild.has(node.name),
+          onTogglePin: togglePinNode,
+          onStatusChange: handleNodeStatusChange,
+        },
+      };
+    });
+
+    setNodes(flowNodes);
+    setDependencyGraph(buildDependencyGraph(data.nodes));
+  }, [selectedDiagram, showCoordinates, togglePinNode, handleNodeStatusChange, setNodes, setDependencyGraph]);
+
   // Load configuration
   useEffect(() => {
-    const processConfig = (data: DiagramConfig, skipSavedPositions: boolean = false) => {
-      // Load saved positions for this diagram (unless we're loading a template)
-      const savedPositions = skipSavedPositions ? {} : readStoredPositions(selectedDiagram);
-      const defaultPinned = new Set(
-        data.nodes.filter((node) => node.pinned).map((node) => node.name)
-      );
-      const storedPinned = readStoredPinnedNodeIds(selectedDiagram);
-      const pinnedForBuild = storedPinned.hasStoredValue ? storedPinned.pins : defaultPinned;
-
-      if (!storedPinned.hasStoredValue && defaultPinned.size > 0) {
-        localStorage.setItem(`diagram-pins-${selectedDiagram}`, JSON.stringify([...defaultPinned]));
-      }
-
-      setPinnedNodeIds(pinnedForBuild);
-
-      // Convert config nodes to React Flow nodes
-      const flowNodes = data.nodes.map((node: DiagramNode, index: number) => {
-        // Use saved position if available, otherwise use config position or default
-        const savedPosition = savedPositions[node.name];
-        const configPosition = node.position;
-        const defaultPosition = {
-          x: index * 300 + 100,
-          y: 200
-        };
-
-        return {
-          id: node.name,
-          type: 'custom',
-          position: savedPosition || configPosition || defaultPosition,
-          data: {
-            ...node,
-            config: data.config,
-            showCoordinates: showCoordinates,
-            dimmed: false,
-            pinned: pinnedForBuild.has(node.name),
-            onTogglePin: togglePinNode,
-            onStatusChange: handleNodeStatusChange,
-          },
-        };
-      });
-
-      setNodes(flowNodes);
-
-      // Build and publish dependency graph for priority refresh
-      const depGraph = buildDependencyGraph(data.nodes);
-      setDependencyGraph(depGraph);
-    };
-
     const loadConfig = async () => {
       // Check for pending template in localStorage first
       const pendingTemplateStr = localStorage.getItem('pendingTemplate');
@@ -353,11 +347,26 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
     };
 
     loadConfig();
+    // processConfig intentionally not in deps: it captures the diagram name
+    // and we only want to reload when the source changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDiagram, initialConfig]);
 
   useEffect(() => {
     setEdges(memoizedFlowEdges);
   }, [memoizedFlowEdges, setEdges]);
+
+  // Inject the source node's live health status onto each edge so CustomEdge
+  // can color the stroke red/yellow/green at a glance.
+  useEffect(() => {
+    setEdges((eds) =>
+      eds.map((edge) => {
+        const sourceStatus = nodeStatuses.get(edge.source) ?? 'unknown';
+        if (edge.data?.sourceStatus === sourceStatus) return edge;
+        return { ...edge, data: { ...edge.data, sourceStatus } };
+      })
+    );
+  }, [nodeStatuses, setEdges]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -419,6 +428,20 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
     });
     localStorage.setItem(savedPositionsKey, JSON.stringify(currentPositions));
   }, [nodes, edges, pinnedNodeIds, config, selectedDiagram, setNodes]);
+
+  // Reset layout: discard saved positions and rebuild from the config's defaults.
+  const handleResetLayout = useCallback(() => {
+    if (!config) return;
+    localStorage.removeItem(`diagram-positions-${selectedDiagram}`);
+    processConfig(config, true);
+    requestAnimationFrame(() => {
+      try { reactFlowInstance.fitView({ duration: 250, padding: 0.2 }); } catch { /* noop in tests */ }
+    });
+  }, [config, selectedDiagram, processConfig, reactFlowInstance]);
+
+  const handleFitView = useCallback(() => {
+    try { reactFlowInstance.fitView({ duration: 250, padding: 0.2 }); } catch { /* noop */ }
+  }, [reactFlowInstance]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -502,15 +525,91 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
 
   const isFiltering = searchQuery !== '' || healthFilter !== 'all';
 
+  const decoratedNodes = useMemo(
+    () => nodes.map((node) =>
+      node.id === selectedNodeId
+        ? { ...node, data: { ...node.data, kbSelected: true }, className: 'kb-selected' }
+        : (node.data?.kbSelected ? { ...node, data: { ...node.data, kbSelected: false }, className: '' } : node)
+    ),
+    [nodes, selectedNodeId]
+  );
+
   const filteredNodes = useMemo(
-    () => (isFiltering ? applyNodeVisibility(nodes, visibleNodeIds) : nodes),
-    [nodes, visibleNodeIds, isFiltering]
+    () => (isFiltering ? applyNodeVisibility(decoratedNodes, visibleNodeIds) : decoratedNodes),
+    [decoratedNodes, visibleNodeIds, isFiltering]
   );
 
   const filteredEdges = useMemo(
     () => (isFiltering ? applyEdgeVisibility(edges, visibleNodeIds) : edges),
     [edges, visibleNodeIds, isFiltering]
   );
+
+  // Cycle keyboard selection through visible nodes ordered left-to-right, top-to-bottom.
+  const cycleSelection = useCallback((direction: 1 | -1) => {
+    const candidates = (isFiltering ? nodes.filter((n) => visibleNodeIds.has(n.id)) : nodes)
+      .slice()
+      .sort((a, b) => (a.position.y - b.position.y) || (a.position.x - b.position.x));
+    if (candidates.length === 0) return;
+    const currentIdx = selectedNodeId ? candidates.findIndex((n) => n.id === selectedNodeId) : -1;
+    const nextIdx = currentIdx === -1
+      ? (direction === 1 ? 0 : candidates.length - 1)
+      : (currentIdx + direction + candidates.length) % candidates.length;
+    const next = candidates[nextIdx];
+    setSelectedNodeId(next.id);
+    try {
+      reactFlowInstance.setCenter(
+        next.position.x + 110,
+        next.position.y + 130,
+        { zoom: 1.4, duration: 200 }
+      );
+    } catch { /* noop in tests */ }
+  }, [nodes, visibleNodeIds, isFiltering, selectedNodeId, reactFlowInstance]);
+
+  const openSelectedNode = useCallback(() => {
+    if (!selectedNodeId) return;
+    window.dispatchEvent(new CustomEvent('diagram:open-node', { detail: { nodeId: selectedNodeId } }));
+  }, [selectedNodeId]);
+
+  // Subscribe to commands dispatched from the command palette / sticky toolbar.
+  useEffect(() => {
+    return subscribeDiagramAction((action) => {
+      switch (action) {
+        case 'auto-layout': handleAutoLayout(); break;
+        case 'reset-layout': handleResetLayout(); break;
+        case 'fit-view': handleFitView(); break;
+        case 'refresh-metrics': refreshAll(); break;
+        case 'export-image': downloadImage(); break;
+        case 'focus-next': cycleSelection(1); break;
+        case 'focus-prev': cycleSelection(-1); break;
+        case 'open-selected': openSelectedNode(); break;
+      }
+    });
+  }, [handleAutoLayout, handleResetLayout, handleFitView, refreshAll, downloadImage, cycleSelection, openSelectedNode]);
+
+  // Global keyboard navigation. Skip when a text input has focus.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      if (isInput) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'j') {
+        e.preventDefault();
+        cycleSelection(1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'k') {
+        e.preventDefault();
+        cycleSelection(-1);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        openSelectedNode();
+      } else if (e.key === 'Escape') {
+        setSelectedNodeId(null);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [cycleSelection, openSelectedNode]);
 
   if (loading) {
     return (
@@ -588,21 +687,47 @@ const DiagramViewInner: React.FC<DiagramViewProps> = ({ onConfigLoad, selectedDi
             )}
           </Panel>
           <Panel position="top-right">
-            <div className="flex gap-2">
+            <div className="flex gap-1 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg p-1">
               <button
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow-lg flex items-center gap-2 transition-colors"
                 onClick={handleAutoLayout}
-                title="Auto-arrange unpinned nodes using Dagre layout"
+                title="Auto-arrange unpinned nodes (Dagre layout)"
+                className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
+                data-testid="toolbar-auto-arrange"
               >
                 <i className="fas fa-sitemap"></i>
-                Auto-arrange
               </button>
               <button
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-lg flex items-center gap-2 transition-colors"
+                onClick={handleResetLayout}
+                title="Reset to original layout"
+                className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
+                data-testid="toolbar-reset"
+              >
+                <i className="fas fa-undo"></i>
+              </button>
+              <button
+                onClick={handleFitView}
+                title="Fit to screen"
+                className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
+                data-testid="toolbar-fit"
+              >
+                <i className="fas fa-expand"></i>
+              </button>
+              <button
+                onClick={refreshAll}
+                title="Refresh metrics now"
+                className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
+                data-testid="toolbar-refresh"
+              >
+                <i className="fas fa-sync"></i>
+              </button>
+              <div className="w-px bg-gray-200 dark:bg-gray-600 mx-1"></div>
+              <button
                 onClick={downloadImage}
+                title="Export as PNG"
+                className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
+                data-testid="toolbar-export"
               >
                 <i className="fas fa-download"></i>
-                Export Image
               </button>
             </div>
           </Panel>

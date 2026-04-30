@@ -8,7 +8,7 @@ vi.mock('../context/ThemeContext', () => ({
 }));
 
 vi.mock('../context/MetricsContext', () => ({
-  useMetrics: () => ({ setDependencyGraph: vi.fn() }),
+  useMetrics: () => ({ setDependencyGraph: vi.fn(), refreshAll: vi.fn(), registerMetric: () => () => {} }),
 }));
 
 vi.mock('../utils/dependencyGraph', () => ({
@@ -50,7 +50,7 @@ vi.mock('reactflow', async () => {
     },
     addEdge: vi.fn(),
     BackgroundVariant: { Dots: 'dots' },
-    useReactFlow: () => ({ getNodes: () => [] }),
+    useReactFlow: () => ({ getNodes: () => [], fitView: vi.fn(), setCenter: vi.fn() }),
     getRectOfNodes: () => ({ x: 0, y: 0, width: 1, height: 1 }),
     getTransformForBounds: () => [0, 0, 1],
   };
